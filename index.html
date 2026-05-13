@@ -230,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v3.7</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.8</div>
 </nav>
 
 <!-- MAIN -->
@@ -647,11 +647,12 @@ async function loadExtra() {
     // Load extra appointments (beyond base data)
     const appts = await sb.get('crm_appointments?select=*&order=appt_date');
     if (appts) {
+      console.log('DB appointments loaded:', appts.length, appts.map(a=>({client:a.client_name,pet:a.pet_name,date:a.appt_date,status:a.status})));
       appts.forEach(a => {
         if (!BASE_APPTS[a.client_name]) BASE_APPTS[a.client_name] = { pets:{}, total_spent:0, visits:0 };
         if (!BASE_APPTS[a.client_name].pets[a.pet_name]) BASE_APPTS[a.client_name].pets[a.pet_name] = [];
-        // Avoid duplicates
-        const exists = BASE_APPTS[a.client_name].pets[a.pet_name].some(v => v.date===a.appt_date && v.status===a.status);
+        // Avoid duplicates by db_id only
+        const exists = BASE_APPTS[a.client_name].pets[a.pet_name].some(v => v.db_id === a.id);
         if (!exists) {
           BASE_APPTS[a.client_name].pets[a.pet_name].push({ date: a.appt_date, price: a.price, status: a.status, db_id: a.id });
           if (a.status === 'Completed') {
@@ -1741,11 +1742,19 @@ function renderMainMap() {
     const dateStr = document.getElementById('route-date').value;
     if (!dateStr) return;
     const target = new Date(dateStr + 'T00:00:00');
+    console.log('Daily route target date:', target, dateStr);
     clientsToMap = allClients().filter(name => {
-      return Object.values(clientData(name).pets).some(visits =>
-        visits.some(v => isSameDay(v.date, target))
+      const cd = clientData(name);
+      const match = Object.values(cd.pets).some(visits =>
+        visits.some(v => {
+          const same = isSameDay(v.date, target);
+          if (same) console.log('MATCH:', name, v.date);
+          return same;
+        })
       );
+      return match;
     });
+    console.log('Daily route clients found:', clientsToMap.length, clientsToMap);
   } else {
     clientsToMap = allClients(); // ALL clients
   }
@@ -2193,7 +2202,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.7</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.8</div>
 
 </body>
 </html>
