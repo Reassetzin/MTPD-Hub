@@ -230,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v3.4</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.5</div>
 </nav>
 
 <!-- MAIN -->
@@ -507,14 +507,24 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Date of Birth</label>
-        <input id="ap-dob" type="date" oninput="updateModalAge()">
-        <div id="ap-age-display" style="font-size:11px;color:var(--sage-dark);font-weight:600;margin-top:4px;min-height:16px"></div>
+        <label>Gender</label>
+        <select id="ap-gender" class="field-input">
+          <option value="">— Select —</option>
+          <option>Male</option>
+          <option>Female</option>
+        </select>
       </div>
       <div class="form-group">
         <label>Weight (lbs)</label>
         <input id="ap-weightlbs" type="number" placeholder="e.g. 45" oninput="updateModalPrice()">
         <div id="ap-price-display" style="font-size:11px;color:var(--terra);font-weight:600;margin-top:4px;min-height:16px"></div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date of Birth</label>
+        <input id="ap-dob" type="date" oninput="updateModalAge()">
+        <div id="ap-age-display" style="font-size:11px;color:var(--sage-dark);font-weight:600;margin-top:4px;min-height:16px"></div>
       </div>
     </div>
     <div class="form-group"><label>Medical Notes</label><textarea id="ap-medical" style="height:60px" placeholder="Allergies, conditions, medications…"></textarea></div>
@@ -878,6 +888,13 @@ function renderPetCards(name, cd, ex) {
             </div>
           </div>
           <div class="field-group"><label>Breed</label><input class="field-input" data-field="breed" value="${pe.breed||''}" placeholder="e.g. Labrador" onchange="savePetField('${name}','${petName}',this)"></div>
+          <div class="field-group"><label>Gender</label>
+            <select class="field-input" data-field="gender" onchange="savePetField('${name}','${petName}',this)">
+              <option value="">— Select —</option>
+              <option${pe.gender==='Male'?' selected':''}>Male</option>
+              <option${pe.gender==='Female'?' selected':''}>Female</option>
+            </select>
+          </div>
           <!-- Birthdate + auto age -->
           <div class="field-group">
             <label>Date of Birth</label>
@@ -1134,6 +1151,7 @@ async function addPet() {
   if (!clientExtra[clientName].petExtras) clientExtra[clientName].petExtras = {};
   clientExtra[clientName].petExtras[name] = {
     species: document.getElementById('ap-species').value || 'dog',
+    gender: document.getElementById('ap-gender').value,
     breed: document.getElementById('ap-breed').value,
     dob: document.getElementById('ap-dob').value,
     weightlbs: document.getElementById('ap-weightlbs').value,
@@ -1144,6 +1162,7 @@ async function addPet() {
   await saveExtra(clientName);
   closeAddPetModal();
   ['ap-name','ap-breed','ap-dob','ap-weightlbs','ap-medical'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ap-gender').value = '';
   document.getElementById('ap-species').value = 'dog';
   document.getElementById('ap-species-dog').classList.add('active');
   document.getElementById('ap-species-cat').classList.remove('active');
@@ -1709,8 +1728,14 @@ function renderMainMap() {
   }
 
   // Only those with a saved address
-  const withAddr = clientsToMap.filter(n => (clientExtra[n]||{}).address);
-  const noAddr   = clientsToMap.filter(n => !(clientExtra[n]||{}).address);
+  const withAddr = clientsToMap.filter(n => {
+    const addr = (clientExtra[n]||{}).address;
+    return addr && addr.trim().length > 0;
+  });
+  const noAddr = clientsToMap.filter(n => {
+    const addr = (clientExtra[n]||{}).address;
+    return !addr || addr.trim().length === 0;
+  });
 
   // Update info bar
   const infoBar = document.getElementById('map-info-bar');
@@ -1947,62 +1972,49 @@ async function saveAppointmentModal() {
   openProfile(clientName);
   showToast(`✅ Appointment saved!`);
 }
-const SEED_DATA = {
-  'Litsa Adamov':        { address:'4321 Coral Way, Naples, FL 34116',              lat:26.1420, lng:-81.7488 },
-  'Felipe Costa':        { address:'7890 Immokalee Rd, Naples, FL 34119',           lat:26.2631, lng:-81.7312 },
-  'Rosa Garcia':         { address:'1250 Pine Ridge Rd, Naples, FL 34108',          lat:26.2084, lng:-81.7764 },
-  'Amy Treff':           { address:'3400 Tamiami Trail N, Naples, FL 34103',        lat:26.1503, lng:-81.7956 },
-  'Cheryl Adams':        { address:'800 Goodlette-Frank Rd, Naples, FL 34102',      lat:26.1412, lng:-81.7895 },
-  'Monica Chan':         { address:'5600 Airport Rd N, Naples, FL 34109',           lat:26.2194, lng:-81.7741 },
-  'Patricia Farrell':    { address:'2600 Golden Gate Pkwy, Naples, FL 34105',       lat:26.1552, lng:-81.7621 },
-  'Anita Perez':         { address:'9100 Collier Blvd, Naples, FL 34114',           lat:26.0881, lng:-81.6734 },
-  'Julio Kranwinkel':    { address:'6300 Davis Blvd, Naples, FL 34104',             lat:26.1330, lng:-81.7502 },
-  'Graciela Londono':    { address:'3200 Santa Barbara Blvd, Naples, FL 34116',     lat:26.1555, lng:-81.7403 },
-  'Matthew Pepe':        { address:'1800 Vanderbilt Beach Rd, Naples, FL 34109',    lat:26.2433, lng:-81.7700 },
-  'Roger Lackhan':       { address:'4500 Radio Rd, Naples, FL 34104',               lat:26.1302, lng:-81.7531 },
-  'Jesus Robles':        { address:'11000 Tamiami Trail E, Naples, FL 34113',       lat:26.0711, lng:-81.6892 },
-  'Melvin Menchita':     { address:'700 Goodlette-Frank Rd N, Naples, FL 34102',    lat:26.1399, lng:-81.7898 },
-  'Kari Chachkes':       { address:'2100 Pine Ridge Rd, Naples, FL 34109',          lat:26.2081, lng:-81.7683 },
-  'Terry Barbarini':     { address:'5200 Rattlesnake Hammock Rd, Naples, FL 34113', lat:26.0992, lng:-81.7015 },
-  'Karen Gonzalez':      { address:'8600 Collier Blvd, Naples, FL 34114',           lat:26.0943, lng:-81.6745 },
-  'Tara Schultz Santos': { address:'1600 Airport Rd S, Naples, FL 34104',           lat:26.1225, lng:-81.7742 },
-  'Shannon Burdick':     { address:'6700 Collier Blvd, Naples, FL 34114',           lat:26.1101, lng:-81.6738 },
-  'Katherine Curran':    { address:'3900 Tamiami Trail E, Naples, FL 34112',        lat:26.1088, lng:-81.7600 },
-  'Alice Sowin':         { address:'890 Vanderbilt Beach Rd, Naples, FL 34108',     lat:26.2430, lng:-81.8012 },
-  'Stefano Romero':      { address:'14100 Tamiami Trail E, Naples, FL 34114',       lat:26.0421, lng:-81.6201 },
-  'Luiz Lopes':          { address:'4000 Golden Gate Pkwy, Naples, FL 34116',       lat:26.1553, lng:-81.7390 },
-  'Gloria Ford':         { address:'2800 Airport Rd N, Naples, FL 34105',           lat:26.1688, lng:-81.7744 },
-  'Leslie Hernandez':    { address:'500 US-41 N, Naples, FL 34108',                 lat:26.1920, lng:-81.8003 },
-  'George Wood':         { address:'10800 Tamiami Trail N, Naples, FL 34108',       lat:26.2722, lng:-81.8015 },
-  'Doreen Dreifus':      { address:'7600 Davis Blvd, Naples, FL 34104',             lat:26.1332, lng:-81.7441 },
-  'Sugey Biaz':          { address:'1200 Collier Blvd, Naples, FL 34116',           lat:26.1621, lng:-81.6722 },
-  'Madeline Rodriguez':  { address:'3100 Pine Ridge Rd, Naples, FL 34109',          lat:26.2082, lng:-81.7641 },
-  'Shanta Ramkeesoon':   { address:'2200 Immokalee Rd, Naples, FL 34110',           lat:26.2751, lng:-81.8021 },
-  'Jennifer Fernanda':   { address:'6100 Pine Ridge Rd, Naples, FL 34119',          lat:26.2088, lng:-81.7201 },
-  'John Derco':          { address:'4800 Tamiami Trail N, Naples, FL 34103',        lat:26.1701, lng:-81.7959 },
-  'Lucille Mascolo':     { address:'900 Central Ave, Naples, FL 34102',             lat:26.1401, lng:-81.7981 },
-  'Pauline':             { address:'3600 Kraft Rd, Naples, FL 34105',               lat:26.1555, lng:-81.7701 },
-  'Jeniffer':            { address:'5400 Shirley St, Naples, FL 34109',             lat:26.2211, lng:-81.7621 },
+// Pre-load geocode cache so map pins appear instantly for known Naples coords
+// No placeholder addresses are seeded — clients only show if address is manually entered
+const KNOWN_COORDS = {
+  '4321 Coral Way, Naples, FL 34116':              { lat:26.1420, lng:-81.7488 },
+  '7890 Immokalee Rd, Naples, FL 34119':           { lat:26.2631, lng:-81.7312 },
+  '1250 Pine Ridge Rd, Naples, FL 34108':          { lat:26.2084, lng:-81.7764 },
+  '3400 Tamiami Trail N, Naples, FL 34103':        { lat:26.1503, lng:-81.7956 },
+  '800 Goodlette-Frank Rd, Naples, FL 34102':      { lat:26.1412, lng:-81.7895 },
+  '5600 Airport Rd N, Naples, FL 34109':           { lat:26.2194, lng:-81.7741 },
+  '2600 Golden Gate Pkwy, Naples, FL 34105':       { lat:26.1552, lng:-81.7621 },
+  '9100 Collier Blvd, Naples, FL 34114':           { lat:26.0881, lng:-81.6734 },
+  '6300 Davis Blvd, Naples, FL 34104':             { lat:26.1330, lng:-81.7502 },
+  '3200 Santa Barbara Blvd, Naples, FL 34116':     { lat:26.1555, lng:-81.7403 },
+  '1800 Vanderbilt Beach Rd, Naples, FL 34109':    { lat:26.2433, lng:-81.7700 },
+  '4500 Radio Rd, Naples, FL 34104':               { lat:26.1302, lng:-81.7531 },
+  '11000 Tamiami Trail E, Naples, FL 34113':       { lat:26.0711, lng:-81.6892 },
+  '700 Goodlette-Frank Rd N, Naples, FL 34102':    { lat:26.1399, lng:-81.7898 },
+  '2100 Pine Ridge Rd, Naples, FL 34109':          { lat:26.2081, lng:-81.7683 },
+  '5200 Rattlesnake Hammock Rd, Naples, FL 34113': { lat:26.0992, lng:-81.7015 },
+  '8600 Collier Blvd, Naples, FL 34114':           { lat:26.0943, lng:-81.6745 },
+  '1600 Airport Rd S, Naples, FL 34104':           { lat:26.1225, lng:-81.7742 },
+  '6700 Collier Blvd, Naples, FL 34114':           { lat:26.1101, lng:-81.6738 },
+  '3900 Tamiami Trail E, Naples, FL 34112':        { lat:26.1088, lng:-81.7600 },
+  '890 Vanderbilt Beach Rd, Naples, FL 34108':     { lat:26.2430, lng:-81.8012 },
+  '14100 Tamiami Trail E, Naples, FL 34114':       { lat:26.0421, lng:-81.6201 },
+  '4000 Golden Gate Pkwy, Naples, FL 34116':       { lat:26.1553, lng:-81.7390 },
+  '2800 Airport Rd N, Naples, FL 34105':           { lat:26.1688, lng:-81.7744 },
+  '500 US-41 N, Naples, FL 34108':                 { lat:26.1920, lng:-81.8003 },
+  '10800 Tamiami Trail N, Naples, FL 34108':       { lat:26.2722, lng:-81.8015 },
+  '7600 Davis Blvd, Naples, FL 34104':             { lat:26.1332, lng:-81.7441 },
+  '1200 Collier Blvd, Naples, FL 34116':           { lat:26.1621, lng:-81.6722 },
+  '3100 Pine Ridge Rd, Naples, FL 34109':          { lat:26.2082, lng:-81.7641 },
+  '2200 Immokalee Rd, Naples, FL 34110':           { lat:26.2751, lng:-81.8021 },
+  '6100 Pine Ridge Rd, Naples, FL 34119':          { lat:26.2088, lng:-81.7201 },
+  '4800 Tamiami Trail N, Naples, FL 34103':        { lat:26.1701, lng:-81.7959 },
+  '900 Central Ave, Naples, FL 34102':             { lat:26.1401, lng:-81.7981 },
+  '3600 Kraft Rd, Naples, FL 34105':               { lat:26.1555, lng:-81.7701 },
+  '5400 Shirley St, Naples, FL 34109':             { lat:26.2211, lng:-81.7621 },
 };
-
-// Always pre-load geocode cache from seed data
-Object.entries(SEED_DATA).forEach(([name, {address, lat, lng}]) => {
-  geocodeCache[address] = { lat, lng };
-});
+Object.entries(KNOWN_COORDS).forEach(([addr, coords]) => { geocodeCache[addr] = coords; });
 
 async function init() {
   await loadExtra();
-
-  // Seed placeholder addresses only if client has no address in DB yet
-  Object.entries(SEED_DATA).forEach(([name, {address, lat, lng}]) => {
-    if (!clientExtra[name]) clientExtra[name] = {};
-    if (!clientExtra[name].address) {
-      clientExtra[name].address = address;
-      clientExtra[name].lat = lat;
-      clientExtra[name].lng = lng;
-    }
-  });
-
   computeStats();
   renderClients();
   buildOutreach();
@@ -2056,7 +2068,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.4</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.5</div>
 
 </body>
 </html>
