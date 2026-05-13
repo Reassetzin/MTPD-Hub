@@ -230,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v3.10</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.11</div>
 </nav>
 
 <!-- MAIN -->
@@ -639,7 +639,7 @@ async function loadExtra() {
         if (!clientExtra[p.client_name]) clientExtra[p.client_name] = { petExtras: {} };
         if (!clientExtra[p.client_name].petExtras) clientExtra[p.client_name].petExtras = {};
         clientExtra[p.client_name].petExtras[p.pet_name] = {
-          species: p.species||'dog', breed: p.breed||'', dob: p.dob||'',
+          species: p.species||'dog', gender: p.gender||'', breed: p.breed||'', dob: p.dob||'',
           weightlbs: p.weightlbs||'', dental: p.dental||'', medical: p.medical||''
         };
       });
@@ -701,7 +701,8 @@ async function saveExtra(name) {
     for (const [petName, pe] of Object.entries(ex.petExtras)) {
       await sb.post('crm_pets', {
         client_name: name, pet_name: petName,
-        species: pe.species||'dog', breed: pe.breed||null, dob: pe.dob||null,
+        species: pe.species||'dog', gender: pe.gender||null,
+        breed: pe.breed||null, dob: pe.dob||null,
         weightlbs: pe.weightlbs||null, dental: pe.dental||null, medical: pe.medical||null
       });
     }
@@ -1713,6 +1714,7 @@ let mainMapInstance = null;
 let mainMapMarkers = [];
 let geocodeCache = {};
 let dailyRouteActive = false;
+const HOME_BASE = '215 Newark Pompton Turnpike, Little Falls Township, NJ 07424';
 let routeLine = null;
 
 // Pin color based on tag — matches user's exact rules
@@ -1797,37 +1799,53 @@ function renderMainMap() {
   let bounds = [];
   let routeCoords = [];
   let routeIndex = 0;
+  const mapRef = mainMapInstance;
+
+  function startPins() {
+    // For daily route, add home base as stop #0 first
+    if (dailyRouteActive) {
+      geocodeAddress(HOME_BASE, (lat, lng) => {
+        if (lat && lng && mapRef) {
+          const homePin = makePin(lat, lng, '#1e2d3d', '🏠');
+          homePin.bindPopup(`<div style="font-family:'DM Sans',sans-serif"><b>🏠 Starting Point</b><br><span style="font-size:11px">${HOME_BASE}</span></div>`).addTo(mapRef);
+          mainMapMarkers.push(homePin);
+          bounds.push([lat, lng]);
+          routeCoords.push([lat, lng]);
+        }
+        nextPin();
+      });
+    } else {
+      nextPin();
+    }
+  }
 
   function nextPin() {
-    if (!queue.length) {
-      if (bounds.length > 1) mainMapInstance.fitBounds(bounds, {padding:[50,50]});
-      else if (bounds.length === 1) mainMapInstance.setView(bounds[0], 13);
-      // Draw dashed route line for daily view
-      if (dailyRouteActive && routeCoords.length > 1) {
-        routeLine = L.polyline(routeCoords, {color:'#2980b9', weight:3, opacity:0.75, dashArray:'10,7'}).addTo(mainMapInstance);
-      }
+    if (!mapRef || queue.length === 0) {
+      if (!mapRef) return;
+      if (bounds.length > 1) mapRef.fitBounds(bounds, {padding:[50,50]});
+      else if (bounds.length === 1) mapRef.setView(bounds[0], 13);
+      if (dailyRouteActive && routeCoords.length > 1)
+        routeLine = L.polyline(routeCoords, {color:'#2980b9', weight:3, opacity:0.75, dashArray:'10,7'}).addTo(mapRef);
       return;
     }
     const name = queue.shift();
     const address = (clientExtra[name]||{}).address;
     const tag = getClientTag(name);
-    const color = pinColor(tag);
     routeIndex++;
     const idx = dailyRouteActive ? routeIndex : null;
 
     geocodeAddress(address, (lat, lng) => {
-      if (lat && lng) {
-        const marker = makePin(lat, lng, color, idx);
-        const popup = buildPinPopup(name, tag, address);
-        marker.bindPopup(popup).addTo(mainMapInstance);
+      if (lat && lng && mapRef) {
+        const marker = makePin(lat, lng, pinColor(tag), idx);
+        marker.bindPopup(buildPinPopup(name, tag, address)).addTo(mapRef);
         mainMapMarkers.push(marker);
         bounds.push([lat, lng]);
         if (dailyRouteActive) routeCoords.push([lat, lng]);
       }
-      setTimeout(nextPin, 280); // Nominatim rate limit
+      setTimeout(nextPin, 50);
     });
   }
-  nextPin();
+  startPins();
 }
 
 function updateMapSidebar(clients) {
@@ -1922,7 +1940,8 @@ function openRouteInMaps() {
     .map(n => encodeURIComponent((clientExtra[n]).address));
 
   if (!addrs.length) { showToast('No clients with addresses on this date'); return; }
-  window.open('https://www.google.com/maps/dir/' + addrs.join('/'), '_blank');
+  // Start from home base, then go through all appointments
+  window.open('https://www.google.com/maps/dir/' + encodeURIComponent(HOME_BASE) + '/' + addrs.join('/'), '_blank');
 }
 
 // ── NAV ───────────────────────────────────────────────────────────────────
@@ -2220,7 +2239,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.10</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.11</div>
 
 </body>
 </html>
