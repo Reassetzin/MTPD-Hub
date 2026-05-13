@@ -230,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v3.9</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.10</div>
 </nav>
 
 <!-- MAIN -->
@@ -2098,7 +2098,8 @@ async function saveAppointmentModal() {
     if (status === 'Completed') { BASE_APPTS[clientName].total_spent += parseInt(price)||0; BASE_APPTS[clientName].visits++; }
     // Always persist — update if db_id exists, insert if not
     if (visit.db_id) {
-      await sb.patch(`crm_appointments?id=eq.${visit.db_id}`, { appt_date: dateStr, price: String(price), status, notes: notes||null });
+      const patchResult = await sb.patch(`crm_appointments?id=eq.${visit.db_id}`, { appt_date: dateStr, price: String(price), status, notes: notes||null });
+      console.log('Patch result:', patchResult, 'db_id:', visit.db_id);
     } else {
       const res = await saveAppointment(clientName, apptEditPet, dateStr, price, status);
       if (res && res[0]) visit.db_id = res[0].id;
@@ -2219,7 +2220,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.9</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.10</div>
 
 </body>
 </html>
