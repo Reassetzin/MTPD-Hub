@@ -95,20 +95,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .profile-stat .val { font-family:'Playfair Display',serif; font-size:22px; color:white; font-weight:700; }
 .profile-stat .lbl { font-size:10px; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:1px; }
 .profile-body { padding:24px 28px; }
-/* Contain Leaflet entirely within the map-container — prevent bleed over form fields */
-#map-container .leaflet-container { z-index:0 !important; }
-#map-container .leaflet-pane,
-#map-container .leaflet-tile-pane,
-#map-container .leaflet-overlay-pane,
-#map-container .leaflet-marker-pane,
-#map-container .leaflet-tooltip-pane,
-#map-container .leaflet-popup-pane { z-index:auto !important; }
+/* Contain Leaflet inside #map-container — contain:strict on the wrapper does the heavy lifting */
+#map-container .leaflet-pane { z-index:auto !important; }
 #map-container .leaflet-top,
 #map-container .leaflet-bottom { z-index:1 !important; }
-/* Old selector kept for safety */
-.profile-body .leaflet-container { z-index:1 !important; }
-.profile-body .leaflet-pane { z-index:1 !important; }
-.profile-body .leaflet-top, .profile-body .leaflet-bottom { z-index:2 !important; }
 .section-title { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
 
 /* EDITABLE FIELDS */
@@ -440,12 +430,14 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
       </div>
 
       <!-- MAP -->
-      <div id="map-section" style="display:none; margin-bottom:20px; position:relative; z-index:0; isolation:isolate;">
+      <div id="map-section" style="display:none; margin-bottom:20px;">
         <div class="section-title" style="margin-bottom:10px">
           📍 Location
           <a id="map-directions-link" href="#" target="_blank" style="font-size:11px;font-weight:600;color:var(--sage-dark);text-decoration:none;margin-left:8px">Open in Google Maps ↗</a>
         </div>
-        <div id="map-container" style="width:100%;height:200px;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:var(--warm);position:relative;isolation:isolate;z-index:0;"></div>
+        <div style="position:relative; height:200px; border-radius:14px; overflow:hidden; border:1px solid var(--border); contain:strict;">
+          <div id="map-container" style="position:absolute;inset:0;"></div>
+        </div>
       </div>
 
       <hr class="divider">
@@ -1008,8 +1000,7 @@ function renderMap(address) {
       return;
     }
     container.innerHTML = '';
-    container.style.height = '200px';
-    container.style.transform = 'translateZ(0)'; // force compositing layer — keeps Leaflet contained
+    container.style.height = '100%';
     profileMapInstance = L.map(container, { zoomControl:true, scrollWheelZoom:false, attributionControl:false }).setView([lat,lng], 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(profileMapInstance);
     const tag = openClientName ? getClientTag(openClientName) : 'active';
