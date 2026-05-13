@@ -81,9 +81,9 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .contact-missing { color:#ccc; font-style:italic; }
 
 /* PROFILE PANEL */
-.profile-overlay { display:none; position:fixed; inset:0; background:rgba(30,45,61,0.45); backdrop-filter:blur(4px); z-index:200; }
+.profile-overlay { display:none; position:fixed; inset:0; background:rgba(30,45,61,0.45); backdrop-filter:blur(4px); z-index:1100; }
 .profile-overlay.open { display:flex; }
-.profile-panel { width:580px; background:var(--white); height:100vh; margin-left:auto; overflow-y:auto; box-shadow:var(--shadow-lg); animation:slideIn .3s ease; position:relative; z-index:201; }
+.profile-panel { width:580px; background:var(--white); height:100vh; margin-left:auto; overflow-y:auto; box-shadow:var(--shadow-lg); animation:slideIn .3s ease; position:relative; z-index:1101; }
 @keyframes slideIn { from{transform:translateX(40px);opacity:0} to{transform:translateX(0);opacity:1} }
 .profile-banner { background:linear-gradient(135deg,var(--navy),var(--navy-mid)); padding:28px 28px 20px; position:relative; }
 .profile-close { position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.12); border:none; color:white; border-radius:50%; width:32px; height:32px; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
@@ -95,10 +95,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .profile-stat .val { font-family:'Playfair Display',serif; font-size:22px; color:white; font-weight:700; }
 .profile-stat .lbl { font-size:10px; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:1px; }
 .profile-body { padding:24px 28px; }
-/* Contain Leaflet inside #map-container — contain:strict on the wrapper does the heavy lifting */
-#map-container .leaflet-pane { z-index:auto !important; }
-#map-container .leaflet-top,
-#map-container .leaflet-bottom { z-index:1 !important; }
 .section-title { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
 
 /* EDITABLE FIELDS */
@@ -234,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v2.0</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.3</div>
 </nav>
 
 <!-- MAIN -->
@@ -427,16 +423,21 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
       <div class="save-btn-wrap">
         <button class="btn btn-primary" onclick="saveClientInfo()">💾 Save Changes</button>
         <button class="btn btn-outline btn-sm" onclick="copyReminderForProfile()">📋 Copy Reminder</button>
+        <a id="map-directions-link" href="#" target="_blank"
+          style="display:none;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;background:var(--warm);border:1.5px solid var(--border);font-size:13px;font-weight:600;color:var(--navy);text-decoration:none;">
+          📍 Open in Google Maps ↗
+        </a>
       </div>
 
-      <!-- MAP -->
-      <div id="map-section" style="display:none; margin-bottom:20px;">
-        <div class="section-title" style="margin-bottom:10px">
-          📍 Location
-          <a id="map-directions-link" href="#" target="_blank" style="font-size:11px;font-weight:600;color:var(--sage-dark);text-decoration:none;margin-left:8px">Open in Google Maps ↗</a>
-        </div>
-        <div style="position:relative; height:200px; border-radius:14px; overflow:hidden; border:1px solid var(--border); contain:strict;">
-          <div id="map-container" style="position:absolute;inset:0;"></div>
+      <!-- PROFILE MAP — uses OpenStreetMap static tile, no Leaflet -->
+      <div id="profile-map-section" style="display:none;margin-bottom:20px;">
+        <div class="section-title" style="margin-bottom:8px">📍 Location</div>
+        <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border);height:180px;background:var(--warm);position:relative;">
+          <iframe id="profile-map-iframe"
+            style="width:100%;height:100%;border:none;display:block;"
+            loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+            src="about:blank">
+          </iframe>
         </div>
       </div>
 
@@ -845,7 +846,6 @@ function openProfile(name) {
   renderPetCards(name, cd, ex);
   renderTimeline(name, cd);
   renderMap(ex.address || '');
-
   document.getElementById('profile-overlay').classList.add('open');
 }
 
@@ -980,39 +980,46 @@ async function saveClientInfo() {
   }
 }
 
-let profileMapInstance = null;
-
 function renderMap(address) {
-  const section = document.getElementById('map-section');
-  const link = document.getElementById('map-directions-link');
-  if (!address || !address.trim()) { section.style.display = 'none'; return; }
-  section.style.display = 'block';
-  link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  const link    = document.getElementById('map-directions-link');
+  const section = document.getElementById('profile-map-section');
+  const iframe  = document.getElementById('profile-map-iframe');
 
-  const container = document.getElementById('map-container');
-  // Cleanly destroy previous instance
-  if (profileMapInstance) { try { profileMapInstance.remove(); } catch(e){} profileMapInstance = null; }
-  container.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">📍 Locating…</div>';
+  if (!address || !address.trim()) {
+    if (link)    link.style.display = 'none';
+    if (section) section.style.display = 'none';
+    if (iframe)  iframe.src = 'about:blank';
+    return;
+  }
 
-  geocodeAddress(address, (lat, lng) => {
-    if (!lat || !lng) {
-      container.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--muted);font-size:13px;padding:16px;text-align:center"><div style="font-size:28px">📍</div>Address not found.<br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}" target="_blank" style="color:var(--sage-dark);font-weight:600;font-size:12px">Search in Google Maps ↗</a></div>`;
-      return;
-    }
-    container.innerHTML = '';
-    container.style.height = '100%';
-    profileMapInstance = L.map(container, { zoomControl:true, scrollWheelZoom:false, attributionControl:false }).setView([lat,lng], 14);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(profileMapInstance);
-    const tag = openClientName ? getClientTag(openClientName) : 'active';
-    makePin(lat, lng, pinColor(tag))
-      .addTo(profileMapInstance)
-      .bindPopup(`<b>${openClientName||''}</b><br><span style="font-size:11px">${address}</span>`)
-      .openPopup();
-    setTimeout(() => { if (profileMapInstance) profileMapInstance.invalidateSize(); }, 400);
-  });
+  if (link) {
+    link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    link.style.display = 'flex';
+  }
+  if (section) section.style.display = 'block';
+
+  function loadIframe(lat, lng) {
+    if (!iframe) return;
+    const d = 0.007;
+    const bbox = `${lng-d},${lat-d},${lng+d},${lat+d}`;
+    iframe.src = `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${lat},${lng}`;
+  }
+
+  const cached = geocodeCache[address];
+  if (cached) {
+    loadIframe(cached.lat, cached.lng);
+  } else {
+    if (iframe) iframe.src = 'about:blank';
+    geocodeAddress(address, (lat, lng) => {
+      if (lat && lng) loadIframe(lat, lng);
+    });
+  }
 }
 
-function closeProfile() { document.getElementById('profile-overlay').classList.remove('open'); openClientName = null; }
+function closeProfile() {
+  document.getElementById('profile-overlay').classList.remove('open');
+  openClientName = null;
+}
 function closeProfileOutside(e) { if(e.target===document.getElementById('profile-overlay')) closeProfile(); }
 
 function copyReminderForProfile() {
@@ -1660,18 +1667,20 @@ function toggleDailyRoute(btn) {
 }
 
 function renderMainMap() {
-  // Init map once
-  if (!mainMapInstance) {
-    mainMapInstance = L.map('main-map').setView([26.15, -81.75], 11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors', maxZoom: 19
-    }).addTo(mainMapInstance);
-  }
+  const container = document.getElementById('main-map');
+  if (!container) return;
 
-  // Clear old markers + route line
-  mainMapMarkers.forEach(m => m.remove());
+  // Destroy previous instance so it reinits with correct dimensions
+  if (mainMapInstance) { try { mainMapInstance.remove(); } catch(e){} mainMapInstance = null; }
   mainMapMarkers = [];
-  if (routeLine) { routeLine.remove(); routeLine = null; }
+  if (routeLine) { routeLine = null; }
+  container.innerHTML = '';
+
+  mainMapInstance = L.map(container).setView([26.15, -81.75], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  }).addTo(mainMapInstance);
+  setTimeout(() => { if (mainMapInstance) mainMapInstance.invalidateSize(); }, 200);
 
   // Decide which clients to show
   let clientsToMap;
@@ -1924,5 +1933,8 @@ async function init() {
 
 init();
 </script>
+<!-- VERSION BADGE -->
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.3</div>
+
 </body>
 </html>
