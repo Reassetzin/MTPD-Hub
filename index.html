@@ -230,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v3.5</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.6</div>
 </nav>
 
 <!-- MAIN -->
@@ -953,22 +953,33 @@ async function savePetField(clientName, petName, input) {
 function renderTimeline(name, cd) {
   const allVisits = [];
   Object.entries(cd.pets).forEach(([pet, visits]) => {
-    visits.forEach(v => allVisits.push({...v, pet}));
+    visits.forEach((v, idx) => allVisits.push({...v, pet, petIdx: idx}));
   });
-  allVisits.sort((a,b) => {
-    const da = parseDate(a.date), db = parseDate(b.date);
-    return (db||0) - (da||0);
-  });
-  document.getElementById('p-timeline').innerHTML = allVisits.length ? allVisits.map(v=>`
-    <div class="tl-item">
+  allVisits.sort((a,b) => (parseDate(b.date)||0) - (parseDate(a.date)||0));
+
+  const tl = document.getElementById('p-timeline');
+  if (!allVisits.length) {
+    tl.innerHTML = '<div class="empty"><div class="emoji">📅</div>No appointments yet. Use "Schedule Appointment" above.</div>';
+    return;
+  }
+  tl.innerHTML = allVisits.map((v,i) => `
+    <div class="tl-item" id="tl-${i}">
       <div class="tl-dot ${v.status.toLowerCase()}"></div>
       <div class="tl-date">${fmtDate(v.date)}</div>
-      <div class="tl-content">
-        <span>🐾 ${v.pet}</span>
-        <span>${v.price?fmtMoney(v.price):'—'}</span>
+      <div class="tl-content" style="flex-wrap:wrap;gap:6px;">
+        <span style="font-weight:600">🐾 ${v.pet}</span>
+        <span>${v.price ? fmtMoney(v.price) : '—'}</span>
         <span class="badge badge-${v.status.toLowerCase()}">${v.status}</span>
+        <div style="margin-left:auto;display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-sm btn-outline" style="padding:3px 10px;font-size:11px"
+            onclick="editAppt('${name.replace(/'/g,"\\'")}','${v.pet.replace(/'/g,"\\'")}',${v.petIdx})">✏️ Edit</button>
+          ${v.status!=='Completed'?`<button class="btn btn-sm" style="padding:3px 10px;font-size:11px;background:#e8f5e9;color:#2e7d32;border:1.5px solid #c8e6c9"
+            onclick="quickStatus('${name.replace(/'/g,"\\'")}','${v.pet.replace(/'/g,"\\'")}',${v.petIdx},'Completed')">✅ Done</button>`:''}
+          ${v.status!=='Cancelled'?`<button class="btn btn-sm" style="padding:3px 10px;font-size:11px;background:#fde8e8;color:#c0392b;border:1.5px solid #f5c6c6"
+            onclick="quickStatus('${name.replace(/'/g,"\\'")}','${v.pet.replace(/'/g,"\\'")}',${v.petIdx},'Cancelled')">✕ Cancel</button>`:''}
+        </div>
       </div>
-    </div>`).join('') : '<div class="empty"><div class="emoji">📅</div>No appointments yet</div>';
+    </div>`).join('');
 }
 
 async function saveClientInfo() {
@@ -1901,29 +1912,92 @@ function showPage(id, el) {
 }
 
 // ── APPOINTMENT MODAL ────────────────────────────────────────────────────
+let apptEditMode = false; // false = new, true = editing existing
+let apptEditPet = null;
+let apptEditIdx = null;
+
 function openApptModal(clientNameOverride) {
+  apptEditMode = false; apptEditPet = null; apptEditIdx = null;
   const name = clientNameOverride || openClientName;
   if (!name) return;
   document.getElementById('appt-modal').dataset.client = name;
+  document.getElementById('appt-modal-title').textContent = '📅 Schedule Appointment';
+  document.getElementById('appt-save-btn').textContent = 'Save Appointment';
   document.getElementById('appt-client').value = name;
+  document.getElementById('appt-delete-btn').style.display = 'none';
 
-  // Populate pet dropdown
   const petSel = document.getElementById('appt-pet');
+  petSel.disabled = false;
   const pets = Object.keys(clientData(name).pets);
   petSel.innerHTML = '<option value="">— Select pet —</option>' +
     pets.map(p => `<option value="${p}">${p}</option>`).join('');
-  if (pets.length === 1) petSel.value = pets[0];
+  if (pets.length === 1) { petSel.value = pets[0]; updateApptPrice(); }
 
-  // Default datetime to tomorrow 9am
-  const d = new Date(); d.setDate(d.getDate()+1); d.setHours(9,0,0,0);
+  // Default to today at 9am
+  const d = new Date(); d.setHours(9,0,0,0);
   document.getElementById('appt-date').value = d.toISOString().slice(0,16);
   document.getElementById('appt-status').value = 'Scheduled';
   document.getElementById('appt-price').value = '';
   document.getElementById('appt-price-hint').textContent = '';
   document.getElementById('appt-notes').value = '';
-  updateApptPrice();
   document.getElementById('appt-modal').classList.add('open');
 }
+
+function editAppt(clientName, petName, petIdx) {
+  apptEditMode = true; apptEditPet = petName; apptEditIdx = petIdx;
+  const visit = BASE_APPTS[clientName]?.pets[petName]?.[petIdx];
+  if (!visit) return;
+
+  document.getElementById('appt-modal').dataset.client = clientName;
+  document.getElementById('appt-modal-title').textContent = '✏️ Edit Appointment';
+  document.getElementById('appt-save-btn').textContent = 'Update Appointment';
+  document.getElementById('appt-client').value = clientName;
+  document.getElementById('appt-delete-btn').style.display = 'inline-block';
+
+  const petSel = document.getElementById('appt-pet');
+  petSel.disabled = true;
+  const pets = Object.keys(clientData(clientName).pets);
+  petSel.innerHTML = pets.map(p => `<option value="${p}"${p===petName?' selected':''}>${p}</option>`).join('');
+
+  // Parse existing date back to datetime-local format
+  const dt = parseDate(visit.date);
+  if (dt && !isNaN(dt)) {
+    const local = new Date(dt.getTime() - dt.getTimezoneOffset()*60000);
+    document.getElementById('appt-date').value = local.toISOString().slice(0,16);
+  } else {
+    document.getElementById('appt-date').value = '';
+  }
+
+  document.getElementById('appt-status').value = visit.status || 'Scheduled';
+  document.getElementById('appt-price').value = visit.price || '';
+  document.getElementById('appt-price-hint').textContent = '';
+  document.getElementById('appt-notes').value = visit.notes || '';
+  document.getElementById('appt-modal').classList.add('open');
+}
+
+function quickStatus(clientName, petName, petIdx, newStatus) {
+  const visits = BASE_APPTS[clientName]?.pets[petName];
+  if (!visits || !visits[petIdx]) return;
+  const old = visits[petIdx].status;
+  visits[petIdx].status = newStatus;
+  // Adjust totals
+  if (old !== 'Completed' && newStatus === 'Completed') {
+    BASE_APPTS[clientName].total_spent += parseInt(visits[petIdx].price)||0;
+    BASE_APPTS[clientName].visits++;
+  } else if (old === 'Completed' && newStatus !== 'Completed') {
+    BASE_APPTS[clientName].total_spent -= parseInt(visits[petIdx].price)||0;
+    BASE_APPTS[clientName].visits--;
+  }
+  // Save to DB
+  if (visits[petIdx].db_id) {
+    sb.patch(`crm_appointments?id=eq.${visits[petIdx].db_id}`, { status: newStatus });
+  }
+  openClientName = clientName;
+  openProfile(clientName);
+  computeStats(); renderClients(); buildOutreach(); buildScheduled();
+  showToast(`✅ Marked as ${newStatus}`);
+}
+
 function closeApptModal() { document.getElementById('appt-modal').classList.remove('open'); }
 function closeApptOutside(e) { if(e.target===document.getElementById('appt-modal')) closeApptModal(); }
 
@@ -1932,9 +2006,33 @@ function updateApptPrice() {
   const petName = document.getElementById('appt-pet').value;
   if (!petName || !clientName) return;
   const pe = (clientExtra[clientName]?.petExtras?.[petName]) || {};
-  const price = calcPrice(pe.species||'dog', pe.weightlbs||0);
-  document.getElementById('appt-price').value = price;
-  document.getElementById('appt-price-hint').textContent = `→ Suggested: $${price} based on weight/species`;
+  if (pe.weightlbs || pe.species) {
+    const price = calcPrice(pe.species||'dog', pe.weightlbs||0);
+    document.getElementById('appt-price').value = price;
+    document.getElementById('appt-price-hint').textContent = `→ Suggested: $${price}`;
+  }
+}
+
+async function deleteAppt() {
+  const clientName = document.getElementById('appt-modal').dataset.client;
+  if (!apptEditMode || !apptEditPet || apptEditIdx === null) return;
+  if (!confirm(`Delete this appointment?`)) return;
+  const visits = BASE_APPTS[clientName]?.pets[apptEditPet];
+  if (!visits) return;
+  const visit = visits[apptEditIdx];
+  // Adjust totals if was completed
+  if (visit.status === 'Completed') {
+    BASE_APPTS[clientName].total_spent -= parseInt(visit.price)||0;
+    BASE_APPTS[clientName].visits--;
+  }
+  // Delete from DB
+  if (visit.db_id) await sb.delete(`crm_appointments?id=eq.${visit.db_id}`);
+  visits.splice(apptEditIdx, 1);
+  closeApptModal();
+  computeStats(); renderClients(); buildOutreach(); buildScheduled();
+  openClientName = clientName;
+  openProfile(clientName);
+  showToast('🗑 Appointment deleted');
 }
 
 async function saveAppointmentModal() {
@@ -1943,6 +2041,7 @@ async function saveAppointmentModal() {
   const dateVal  = document.getElementById('appt-date').value;
   const status   = document.getElementById('appt-status').value;
   const price    = document.getElementById('appt-price').value;
+  const notes    = document.getElementById('appt-notes').value;
 
   if (!petName)  { showToast('⚠️ Select a pet'); return; }
   if (!dateVal)  { showToast('⚠️ Pick a date'); return; }
@@ -1951,26 +2050,39 @@ async function saveAppointmentModal() {
     month:'long', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'
   });
 
-  // Add to in-memory data
   if (!BASE_APPTS[clientName]) BASE_APPTS[clientName] = {pets:{}, total_spent:0, visits:0};
   if (!BASE_APPTS[clientName].pets[petName]) BASE_APPTS[clientName].pets[petName] = [];
-  BASE_APPTS[clientName].pets[petName].push({ date: dateStr, price, status });
-  if (status === 'Completed') {
-    BASE_APPTS[clientName].total_spent += parseInt(price)||0;
-    BASE_APPTS[clientName].visits++;
+
+  if (apptEditMode && apptEditIdx !== null) {
+    // EDIT existing
+    const visit = BASE_APPTS[clientName].pets[apptEditPet][apptEditIdx];
+    const oldStatus = visit.status;
+    const oldPrice  = parseInt(visit.price)||0;
+    // Adjust totals
+    if (oldStatus === 'Completed') { BASE_APPTS[clientName].total_spent -= oldPrice; BASE_APPTS[clientName].visits--; }
+    visit.date = dateStr; visit.price = price; visit.status = status; visit.notes = notes;
+    if (status === 'Completed') { BASE_APPTS[clientName].total_spent += parseInt(price)||0; BASE_APPTS[clientName].visits++; }
+    // Update in DB
+    if (visit.db_id) {
+      await sb.patch(`crm_appointments?id=eq.${visit.db_id}`, { appt_date: dateStr, price: String(price), status, notes });
+    } else {
+      const res = await saveAppointment(clientName, petName, dateStr, price, status);
+      if (res && res[0]) visit.db_id = res[0].id;
+    }
+  } else {
+    // NEW appointment
+    const newVisit = { date: dateStr, price, status, notes };
+    BASE_APPTS[clientName].pets[petName].push(newVisit);
+    if (status === 'Completed') { BASE_APPTS[clientName].total_spent += parseInt(price)||0; BASE_APPTS[clientName].visits++; }
+    const res = await saveAppointment(clientName, petName, dateStr, price, status);
+    if (res && res[0]) newVisit.db_id = res[0].id;
   }
 
-  // Save to Supabase
-  await saveAppointment(clientName, petName, dateStr, price, status);
-
   closeApptModal();
-  computeStats();
-  renderClients();
-  buildOutreach();
-  buildScheduled();
+  computeStats(); renderClients(); buildOutreach(); buildScheduled();
   openClientName = clientName;
   openProfile(clientName);
-  showToast(`✅ Appointment saved!`);
+  showToast(apptEditMode ? '✅ Appointment updated!' : '✅ Appointment saved!');
 }
 // Pre-load geocode cache so map pins appear instantly for known Naples coords
 // No placeholder addresses are seeded — clients only show if address is manually entered
@@ -2026,16 +2138,26 @@ init();
 <!-- SCHEDULE APPOINTMENT MODAL -->
 <div class="modal-overlay" id="appt-modal" onclick="closeApptOutside(event)">
   <div class="modal">
-    <h3>📅 Schedule Appointment</h3>
+    <h3 id="appt-modal-title">📅 Schedule Appointment</h3>
     <div class="form-group">
       <label>Client</label>
-      <input id="appt-client" class="field-input" style="background:var(--warm)" readonly>
+      <input id="appt-client" class="field-input" style="background:var(--warm);color:var(--muted)" readonly>
     </div>
-    <div class="form-group">
-      <label>Pet</label>
-      <select id="appt-pet" class="field-input" onchange="updateApptPrice()">
-        <option value="">— Select pet —</option>
-      </select>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Pet</label>
+        <select id="appt-pet" class="field-input" onchange="updateApptPrice()">
+          <option value="">— Select pet —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="appt-status" class="field-input">
+          <option value="Scheduled">📅 Scheduled</option>
+          <option value="Completed">✅ Completed</option>
+          <option value="Cancelled">✕ Cancelled</option>
+        </select>
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -2043,32 +2165,27 @@ init();
         <input id="appt-date" type="datetime-local" class="field-input">
       </div>
       <div class="form-group">
-        <label>Status</label>
-        <select id="appt-status" class="field-input">
-          <option value="Scheduled">Scheduled</option>
-          <option value="Completed">Completed</option>
-          <option value="Cancelled">Cancelled</option>
-        </select>
+        <label>Service Price ($)</label>
+        <input id="appt-price" type="number" class="field-input" placeholder="205">
+        <div id="appt-price-hint" style="font-size:11px;color:var(--terra);font-weight:600;margin-top:4px"></div>
       </div>
     </div>
     <div class="form-group">
-      <label>Service Price ($)</label>
-      <input id="appt-price" type="number" class="field-input" placeholder="205">
-      <div id="appt-price-hint" style="font-size:11px;color:var(--terra);font-weight:600;margin-top:4px"></div>
-    </div>
-    <div class="form-group">
       <label>Notes</label>
-      <input id="appt-notes" class="field-input" placeholder="Any notes for this appointment…">
+      <input id="appt-notes" class="field-input" placeholder="Gate code, special instructions…">
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeApptModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveAppointmentModal()">Save Appointment</button>
+    <div class="modal-actions" style="justify-content:space-between">
+      <button id="appt-delete-btn" class="btn btn-danger btn-sm" style="display:none" onclick="deleteAppt()">🗑 Delete</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" onclick="closeApptModal()">Cancel</button>
+        <button id="appt-save-btn" class="btn btn-primary" onclick="saveAppointmentModal()">Save Appointment</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.5</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.6</div>
 
 </body>
 </html>
