@@ -230,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v3.8</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.9</div>
 </nav>
 
 <!-- MAIN -->
@@ -644,17 +644,31 @@ async function loadExtra() {
         };
       });
     }
-    // Load extra appointments (beyond base data)
+    // Load extra appointments — DB is source of truth, overrides base data
     const appts = await sb.get('crm_appointments?select=*&order=appt_date');
     if (appts) {
-      console.log('DB appointments loaded:', appts.length, appts.map(a=>({client:a.client_name,pet:a.pet_name,date:a.appt_date,status:a.status})));
+      console.log('DB appointments loaded:', appts.length);
+      // Build a set of all DB-managed appointments per client/pet
+      const dbManaged = {}; // key: "clientName|petName" -> true means DB owns it
+      appts.forEach(a => {
+        const key = `${a.client_name}|${a.pet_name}`;
+        dbManaged[key] = true;
+      });
+      // Remove base appointments for any client/pet pair managed by DB
+      Object.keys(dbManaged).forEach(key => {
+        const [clientName, petName] = key.split('|');
+        if (BASE_APPTS[clientName]?.pets[petName]) {
+          // Keep only appointments without db_id (truly base ones not yet in DB)
+          BASE_APPTS[clientName].pets[petName] = BASE_APPTS[clientName].pets[petName].filter(v => v.db_id);
+        }
+      });
+      // Now add all DB appointments
       appts.forEach(a => {
         if (!BASE_APPTS[a.client_name]) BASE_APPTS[a.client_name] = { pets:{}, total_spent:0, visits:0 };
         if (!BASE_APPTS[a.client_name].pets[a.pet_name]) BASE_APPTS[a.client_name].pets[a.pet_name] = [];
-        // Avoid duplicates by db_id only
         const exists = BASE_APPTS[a.client_name].pets[a.pet_name].some(v => v.db_id === a.id);
         if (!exists) {
-          BASE_APPTS[a.client_name].pets[a.pet_name].push({ date: a.appt_date, price: a.price, status: a.status, db_id: a.id });
+          BASE_APPTS[a.client_name].pets[a.pet_name].push({ date: a.appt_date, price: a.price, status: a.status, notes: a.notes, db_id: a.id });
           if (a.status === 'Completed') {
             BASE_APPTS[a.client_name].total_spent += parseInt(a.price)||0;
             BASE_APPTS[a.client_name].visits++;
@@ -1990,22 +2004,26 @@ function editAppt(clientName, petName, petIdx) {
   document.getElementById('appt-modal').classList.add('open');
 }
 
-function quickStatus(clientName, petName, petIdx, newStatus) {
+async function quickStatus(clientName, petName, petIdx, newStatus) {
   const visits = BASE_APPTS[clientName]?.pets[petName];
   if (!visits || !visits[petIdx]) return;
-  const old = visits[petIdx].status;
-  visits[petIdx].status = newStatus;
+  const visit = visits[petIdx];
+  const old = visit.status;
+  visit.status = newStatus;
   // Adjust totals
   if (old !== 'Completed' && newStatus === 'Completed') {
-    BASE_APPTS[clientName].total_spent += parseInt(visits[petIdx].price)||0;
+    BASE_APPTS[clientName].total_spent += parseInt(visit.price)||0;
     BASE_APPTS[clientName].visits++;
   } else if (old === 'Completed' && newStatus !== 'Completed') {
-    BASE_APPTS[clientName].total_spent -= parseInt(visits[petIdx].price)||0;
+    BASE_APPTS[clientName].total_spent -= parseInt(visit.price)||0;
     BASE_APPTS[clientName].visits--;
   }
-  // Save to DB
-  if (visits[petIdx].db_id) {
-    sb.patch(`crm_appointments?id=eq.${visits[petIdx].db_id}`, { status: newStatus });
+  // Always persist to DB — upsert if no db_id
+  if (visit.db_id) {
+    await sb.patch(`crm_appointments?id=eq.${visit.db_id}`, { status: newStatus });
+  } else {
+    const res = await saveAppointment(clientName, petName, visit.date, visit.price, newStatus);
+    if (res && res[0]) visit.db_id = res[0].id;
   }
   openClientName = clientName;
   openProfile(clientName);
@@ -2075,15 +2093,14 @@ async function saveAppointmentModal() {
     const visit = BASE_APPTS[clientName].pets[apptEditPet][apptEditIdx];
     const oldStatus = visit.status;
     const oldPrice  = parseInt(visit.price)||0;
-    // Adjust totals
     if (oldStatus === 'Completed') { BASE_APPTS[clientName].total_spent -= oldPrice; BASE_APPTS[clientName].visits--; }
     visit.date = dateStr; visit.price = price; visit.status = status; visit.notes = notes;
     if (status === 'Completed') { BASE_APPTS[clientName].total_spent += parseInt(price)||0; BASE_APPTS[clientName].visits++; }
-    // Update in DB
+    // Always persist — update if db_id exists, insert if not
     if (visit.db_id) {
-      await sb.patch(`crm_appointments?id=eq.${visit.db_id}`, { appt_date: dateStr, price: String(price), status, notes });
+      await sb.patch(`crm_appointments?id=eq.${visit.db_id}`, { appt_date: dateStr, price: String(price), status, notes: notes||null });
     } else {
-      const res = await saveAppointment(clientName, petName, dateStr, price, status);
+      const res = await saveAppointment(clientName, apptEditPet, dateStr, price, status);
       if (res && res[0]) visit.db_id = res[0].id;
     }
   } else {
@@ -2202,7 +2219,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.8</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.9</div>
 
 </body>
 </html>
