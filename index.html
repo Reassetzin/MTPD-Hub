@@ -230,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v3.6</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.7</div>
 </nav>
 
 <!-- MAIN -->
@@ -729,7 +729,23 @@ function showLoading(show) {
 // ── HELPERS ───────────────────────────────────────────────────────────────
 function initials(n) { return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
 function fmtMoney(n) { return '$' + (parseInt(n)||0).toLocaleString(); }
-function parseDate(d) { try { const dt = new Date(d); return isNaN(dt)?null:dt; } catch { return null; } }
+function isSameDay(dateStr, target) {
+  const d = parseDate(dateStr);
+  if (!d || !target) return false;
+  return d.getFullYear()===target.getFullYear() &&
+         d.getMonth()===target.getMonth() &&
+         d.getDate()===target.getDate();
+}
+
+function parseDate(d) {
+  if (!d) return null;
+  try {
+    // Handle "May 13, 2026, 9:00 AM" — remove the comma before time
+    const cleaned = String(d).replace(/,(\s*\d+:\d+)/, '$1');
+    const dt = new Date(cleaned);
+    return isNaN(dt) ? null : dt;
+  } catch { return null; }
+}
 function fmtDate(d) { const dt = parseDate(d); if (!dt) return d||'—'; return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function fmtShort(d) { const dt = parseDate(d); if (!dt) return '—'; return dt.toLocaleDateString('en-US',{month:'short',year:'numeric'}); }
 function allClients() {
@@ -1531,10 +1547,10 @@ function renderCalendar() {
       weekDates.forEach(d => {
         const isToday = d.getTime() === today.getTime();
         const cellAppts = appts.filter(a => {
-          const ad = new Date(a.date);
+          const ad = parseDate(a.date);
+          if (!ad) return false;
           const sameDay = ad.getFullYear()===d.getFullYear() && ad.getMonth()===d.getMonth() && ad.getDate()===d.getDate();
-          const apptHour = ad.getHours();
-          return sameDay && apptHour === h;
+          return sameDay && ad.getHours() === h;
         });
         html += `<div class="week-cell${isToday?' today':''}">
           ${cellAppts.map(a=>`<div class="cal-event ${a.status.toLowerCase()}" style="font-size:9px" onclick="openProfile('${a.name.replace(/'/g,"\\'")}')">🐾 ${a.name.split(' ')[0]}</div>`).join('')}
@@ -1727,11 +1743,7 @@ function renderMainMap() {
     const target = new Date(dateStr + 'T00:00:00');
     clientsToMap = allClients().filter(name => {
       return Object.values(clientData(name).pets).some(visits =>
-        visits.some(v => {
-          const d = parseDate(v.date);
-          return d && d.getFullYear()===target.getFullYear() &&
-                 d.getMonth()===target.getMonth() && d.getDate()===target.getDate();
-        })
+        visits.some(v => isSameDay(v.date, target))
       );
     });
   } else {
@@ -1880,15 +1892,9 @@ function openRouteInMaps() {
   if (!dateStr) return;
   const target = new Date(dateStr + 'T00:00:00');
   const addrs = allClients()
-    .filter(name => {
-      return Object.values(clientData(name).pets).some(visits =>
-        visits.some(v => {
-          const d = parseDate(v.date);
-          return d && d.getFullYear()===target.getFullYear() &&
-                 d.getMonth()===target.getMonth() && d.getDate()===target.getDate();
-        })
-      );
-    })
+    .filter(name => Object.values(clientData(name).pets).some(visits =>
+      visits.some(v => isSameDay(v.date, target))
+    ))
     .filter(n => (clientExtra[n]||{}).address)
     .map(n => encodeURIComponent((clientExtra[n]).address));
 
@@ -2046,9 +2052,11 @@ async function saveAppointmentModal() {
   if (!petName)  { showToast('⚠️ Select a pet'); return; }
   if (!dateVal)  { showToast('⚠️ Pick a date'); return; }
 
-  const dateStr = new Date(dateVal).toLocaleDateString('en-US', {
-    month:'long', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'
-  });
+  const dt = new Date(dateVal);
+  // Store as unambiguous format: "January 15, 2026 9:00 AM" — no comma before time
+  const dateStr = dt.toLocaleDateString('en-US', {
+    month:'long', day:'numeric', year:'numeric'
+  }) + ' ' + dt.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
 
   if (!BASE_APPTS[clientName]) BASE_APPTS[clientName] = {pets:{}, total_spent:0, visits:0};
   if (!BASE_APPTS[clientName].pets[petName]) BASE_APPTS[clientName].pets[petName] = [];
@@ -2185,7 +2193,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.6</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.7</div>
 
 </body>
 </html>
