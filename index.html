@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paw & Smile CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root {
+  --cream: #faf7f2; --warm: #f5ede0; --sage: #7a9e7e; --sage-dark: #4d7a52;
+  --sage-light: #c8deca; --terra: #c97b5b; --terra-light: #f0d5c8;
+  --navy: #1e2d3d; --navy-mid: #2e4460; --gold: #c4952a; --gold-light: #f5e6c8;
+  --text: #2c2c2c; --muted: #7a7a6e; --border: #e8e0d4; --white: #ffffff;
+  --shadow: 0 4px 24px rgba(30,45,61,0.08); --shadow-lg: 0 12px 48px rgba(30,45,61,0.14);
+  --red: #c0392b; --red-light: #fde8e8;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--text); min-height:100vh; display:flex; }
+
+/* SIDEBAR */
+.sidebar { width:240px; background:var(--navy); display:flex; flex-direction:column; position:fixed; top:0; bottom:0; left:0; z-index:100; }
+.logo { padding:26px 22px 18px; border-bottom:1px solid rgba(255,255,255,0.08); }
+.logo-paw { font-size:26px; margin-bottom:4px; }
+.logo h1 { font-family:'Playfair Display',serif; font-size:19px; color:var(--cream); }
+.logo span { font-size:10px; color:var(--sage-light); letter-spacing:2px; text-transform:uppercase; font-weight:500; }
+.nav { padding:18px 10px; flex:1; }
+.nav-item { display:flex; align-items:center; gap:11px; padding:10px 13px; border-radius:10px; cursor:pointer; color:rgba(255,255,255,0.5); font-size:13.5px; font-weight:500; transition:all .2s; margin-bottom:2px; }
+.nav-item:hover { background:rgba(255,255,255,0.07); color:white; }
+.nav-item.active { background:var(--sage-dark); color:white; }
+.nav-item .ico { font-size:16px; width:20px; text-align:center; }
+.nav-badge { margin-left:auto; background:var(--terra); color:white; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; }
+.sidebar-footer { padding:14px; border-top:1px solid rgba(255,255,255,0.08); font-size:11px; color:rgba(255,255,255,0.25); text-align:center; }
+
+/* MAIN */
+.main { margin-left:240px; flex:1; min-height:100vh; }
+.topbar { background:var(--white); border-bottom:1px solid var(--border); padding:14px 28px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.topbar-left { display:flex; align-items:center; gap:16px; }
+.topbar h2 { font-family:'Playfair Display',serif; font-size:20px; color:var(--navy); }
+.search-wrap { display:flex; align-items:center; gap:8px; background:var(--warm); border:1.5px solid var(--border); border-radius:10px; padding:8px 14px; }
+.search-wrap input { border:none; background:none; outline:none; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); width:200px; }
+.btn { padding:8px 16px; border-radius:10px; border:none; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; transition:all .2s; }
+.btn-primary { background:var(--sage-dark); color:white; }
+.btn-primary:hover { background:var(--sage); }
+.btn-outline { background:none; border:1.5px solid var(--border); color:var(--navy); }
+.btn-outline:hover { border-color:var(--sage); color:var(--sage-dark); }
+.btn-danger { background:var(--red-light); color:var(--red); border:1.5px solid #f5c6c6; }
+.btn-danger:hover { background:#fbd0d0; }
+.btn-sm { padding:5px 12px; font-size:12px; }
+
+.content { padding:24px 28px; }
+.page { display:none; } .page.active { display:block; }
+
+/* STATS */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+.stat-card { background:var(--white); border-radius:14px; padding:20px; border:1px solid var(--border); box-shadow:var(--shadow); position:relative; overflow:hidden; }
+.stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.stat-card.c1::before{background:var(--sage)}.stat-card.c2::before{background:var(--gold)}.stat-card.c3::before{background:var(--terra)}.stat-card.c4::before{background:var(--navy)}
+.stat-ico { position:absolute; right:16px; top:16px; font-size:26px; opacity:0.12; }
+.stat-lbl { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.stat-val { font-family:'Playfair Display',serif; font-size:32px; font-weight:700; color:var(--navy); line-height:1; margin-bottom:4px; }
+.stat-sub { font-size:11px; color:var(--muted); }
+
+/* CLIENT GRID */
+.client-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.client-card { background:var(--white); border-radius:16px; border:1px solid var(--border); box-shadow:var(--shadow); overflow:hidden; cursor:pointer; transition:all .2s; }
+.client-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-lg); border-color:var(--sage-light); }
+.client-card-header { padding:18px 18px 12px; display:flex; align-items:flex-start; gap:13px; }
+.avatar { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,var(--sage-light),var(--terra-light)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; color:var(--navy-mid); flex-shrink:0; }
+.client-card-name { font-weight:700; font-size:15px; color:var(--navy); margin-bottom:2px; }
+.client-card-meta { font-size:12px; color:var(--muted); }
+.client-card-body { padding:0 18px 14px; }
+.pet-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.pet-chip { background:var(--sage-light); color:var(--sage-dark); font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; }
+.client-card-footer { display:flex; justify-content:space-between; align-items:center; padding:10px 18px; background:var(--warm); border-top:1px solid var(--border); }
+.client-card-footer span { font-size:11px; color:var(--muted); }
+.client-card-footer strong { color:var(--sage-dark); }
+.contact-line { font-size:12px; color:var(--muted); margin-bottom:4px; display:flex; align-items:center; gap:6px; }
+.contact-line .ico { font-size:13px; }
+.contact-missing { color:#ccc; font-style:italic; }
+
+/* PROFILE PANEL */
+.profile-overlay { display:none; position:fixed; inset:0; background:rgba(30,45,61,0.45); backdrop-filter:blur(4px); z-index:200; }
+.profile-overlay.open { display:flex; }
+.profile-panel { width:580px; background:var(--white); height:100vh; margin-left:auto; overflow-y:auto; box-shadow:var(--shadow-lg); animation:slideIn .3s ease; position:relative; z-index:201; }
+@keyframes slideIn { from{transform:translateX(40px);opacity:0} to{transform:translateX(0);opacity:1} }
+.profile-banner { background:linear-gradient(135deg,var(--navy),var(--navy-mid)); padding:28px 28px 20px; position:relative; }
+.profile-close { position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.12); border:none; color:white; border-radius:50%; width:32px; height:32px; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.profile-avatar { width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,var(--sage-light),var(--terra-light)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:22px; color:var(--navy-mid); margin-bottom:12px; border:3px solid rgba(255,255,255,0.2); }
+.profile-name { font-family:'Playfair Display',serif; font-size:22px; color:white; margin-bottom:2px; }
+.profile-sub { font-size:13px; color:rgba(255,255,255,0.6); }
+.profile-stats { display:flex; gap:24px; margin-top:16px; }
+.profile-stat { text-align:center; }
+.profile-stat .val { font-family:'Playfair Display',serif; font-size:22px; color:white; font-weight:700; }
+.profile-stat .lbl { font-size:10px; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:1px; }
+.profile-body { padding:24px 28px; }
+/* Contain Leaflet entirely within the map-container — prevent bleed over form fields */
+#map-container .leaflet-container { z-index:0 !important; }
+#map-container .leaflet-pane,
+#map-container .leaflet-tile-pane,
+#map-container .leaflet-overlay-pane,
+#map-container .leaflet-marker-pane,
+#map-container .leaflet-tooltip-pane,
+#map-container .leaflet-popup-pane { z-index:auto !important; }
+#map-container .leaflet-top,
+#map-container .leaflet-bottom { z-index:1 !important; }
+/* Old selector kept for safety */
+.profile-body .leaflet-container { z-index:1 !important; }
+.profile-body .leaflet-pane { z-index:1 !important; }
+.profile-body .leaflet-top, .profile-body .leaflet-bottom { z-index:2 !important; }
+.section-title { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
+
+/* EDITABLE FIELDS */
+.field-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+.field-group { display:flex; flex-direction:column; gap:4px; }
+.field-group label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; }
+.field-input { padding:9px 12px; border:1.5px solid var(--border); border-radius:9px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); background:var(--cream); outline:none; transition:border .2s; width:100%; }
+.field-input:focus { border-color:var(--sage); background:white; }
+.field-full { grid-column:1/-1; }
+.save-btn-wrap { margin-bottom:24px; display:flex; gap:8px; }
+
+/* PET CARDS */
+.pet-cards { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
+.pet-card { background:var(--warm); border-radius:12px; border:1px solid var(--border); overflow:hidden; }
+.pet-card-header { padding:13px 16px; display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
+.pet-card-header:hover { background:rgba(0,0,0,0.02); }
+.pet-icon { font-size:22px; }
+.pet-card-name { font-weight:700; font-size:14px; color:var(--navy); }
+.pet-card-sub { font-size:12px; color:var(--muted); }
+.pet-card-body { padding:0 16px 14px; border-top:1px solid var(--border); }
+.pet-field-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:12px 0; }
+.visit-history { margin-top:10px; }
+.visit-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:12.5px; }
+.visit-row:last-child { border-bottom:none; }
+.badge { display:inline-block; padding:2px 9px; border-radius:20px; font-size:10px; font-weight:700; }
+.badge-completed{background:#e6f4ea;color:#2e7d32}.badge-scheduled{background:var(--gold-light);color:#8a6000}.badge-cancelled{background:var(--red-light);color:var(--red)}
+.pet-toggle { margin-left:auto; font-size:12px; color:var(--muted); }
+
+/* VISIT TIMELINE */
+.timeline { position:relative; padding-left:20px; }
+.timeline::before { content:''; position:absolute; left:6px; top:8px; bottom:8px; width:2px; background:var(--border); }
+.tl-item { position:relative; margin-bottom:16px; }
+.tl-dot { position:absolute; left:-17px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--sage); border:2px solid white; box-shadow:0 0 0 2px var(--sage-light); }
+.tl-dot.cancelled { background:var(--red); box-shadow:0 0 0 2px #fdd; }
+.tl-dot.scheduled { background:var(--gold); box-shadow:0 0 0 2px var(--gold-light); }
+.tl-date { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+.tl-content { background:white; border-radius:10px; padding:10px 13px; border:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; align-items:center; }
+
+/* NOTE */
+.notes-area { width:100%; padding:10px 13px; border:1.5px solid var(--border); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); background:var(--cream); resize:vertical; min-height:80px; outline:none; }
+.notes-area:focus { border-color:var(--sage); background:white; }
+
+/* MODAL */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(30,45,61,0.5); backdrop-filter:blur(4px); z-index:300; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--white); border-radius:20px; padding:30px; width:460px; max-width:95vw; box-shadow:var(--shadow-lg); animation:slideUp .3s ease; }
+@keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.modal h3 { font-family:'Playfair Display',serif; font-size:19px; color:var(--navy); margin-bottom:18px; }
+.form-group { margin-bottom:13px; }
+.form-group label { display:block; font-size:11px; font-weight:700; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px; }
+.form-group input, .form-group select, .form-group textarea { width:100%; padding:9px 13px; border:1.5px solid var(--border); border-radius:9px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); background:var(--cream); outline:none; transition:border .2s; }
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus { border-color:var(--sage); background:white; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.modal-actions { display:flex; gap:10px; margin-top:20px; justify-content:flex-end; }
+
+/* ALERTS */
+.toast { position:fixed; bottom:28px; right:28px; background:var(--navy); color:white; padding:12px 20px; border-radius:12px; font-size:13px; font-weight:500; z-index:999; opacity:0; transform:translateY(10px); transition:all .3s; pointer-events:none; }
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* SEARCH HIGHLIGHT */
+.hl { background:var(--gold-light); border-radius:3px; padding:0 2px; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--cream)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
+.empty { text-align:center; padding:40px 20px; color:var(--muted); font-size:13px; }
+.empty .emoji { font-size:32px; margin-bottom:8px; }
+
+/* Species toggle buttons */
+.species-btn { padding:8px 20px; border-radius:10px; border:1.5px solid var(--border); background:none; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; transition:all .2s; }
+.species-btn.active { background:var(--navy); color:white; border-color:var(--navy); }
+.species-btn:hover:not(.active) { border-color:var(--sage); color:var(--sage-dark); }
+
+/* Tags */
+.tag { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:0.3px; }
+.tag-overdue { background:#fde8e8; color:#b71c1c; }
+.tag-returning { background:#fff8e1; color:#8a6000; }
+.tag-active { background:#e8f5e9; color:#2e7d32; }
+.tag-new { background:#e3f2fd; color:#1565c0; }
+.tag-scheduled { background:var(--gold-light); color:#8a6000; }
+
+/* Filter pills */
+.filter-pill { padding:6px 14px; border-radius:20px; border:1.5px solid var(--border); font-size:12px; font-weight:600; cursor:pointer; background:none; color:var(--muted); transition:all .2s; font-family:'DM Sans',sans-serif; }
+.filter-pill.active { background:var(--navy); color:white; border-color:var(--navy); }
+.filter-pill:hover:not(.active) { border-color:var(--sage); color:var(--sage-dark); }
+
+/* View toggles */
+.view-toggle { padding:6px 14px; border-radius:8px; border:1.5px solid var(--border); font-size:13px; font-weight:600; cursor:pointer; background:none; color:var(--muted); transition:all .2s; font-family:'DM Sans',sans-serif; }
+.view-toggle.active { background:var(--navy); color:white; border-color:var(--navy); }
+
+/* List table */
+.list-table { width:100%; border-collapse:collapse; background:var(--white); border-radius:16px; overflow:hidden; border:1px solid var(--border); box-shadow:var(--shadow); }
+.list-table th { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); padding:12px 16px; text-align:left; background:var(--warm); border-bottom:1px solid var(--border); }
+.list-table td { padding:12px 16px; font-size:13.5px; border-top:1px solid var(--border); vertical-align:middle; }
+.list-table tr:hover td { background:var(--cream); }
+
+/* Calendar */
+.cal-month { display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background:var(--border); border-radius:14px; overflow:hidden; border:1px solid var(--border); }
+.cal-day-header { background:var(--warm); padding:8px; text-align:center; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+.cal-day { background:var(--white); min-height:90px; padding:6px; position:relative; }
+.cal-day.other-month { background:#faf9f6; }
+.cal-day.today { background:#f0f8f0; }
+.cal-day-num { font-size:12px; font-weight:700; color:var(--muted); margin-bottom:4px; }
+.cal-day.today .cal-day-num { background:var(--sage-dark); color:white; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; }
+.cal-event { font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; margin-bottom:2px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cal-event.completed { background:#e8f5e9; color:#2e7d32; }
+.cal-event.scheduled { background:var(--gold-light); color:#8a6000; }
+.cal-event.cancelled { background:#fde8e8; color:#b71c1c; }
+/* Week view */
+.cal-week { display:grid; grid-template-columns:60px repeat(7,1fr); gap:1px; background:var(--border); border-radius:14px; overflow:hidden; border:1px solid var(--border); }
+.week-time { background:var(--warm); padding:6px 4px; font-size:10px; color:var(--muted); text-align:right; }
+.week-header { background:var(--warm); padding:10px 6px; text-align:center; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; }
+.week-header.today { color:var(--sage-dark); }
+.week-cell { background:var(--white); min-height:48px; padding:3px; position:relative; }
+.week-cell.today { background:#f0f8f0; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-paw">🐾</div>
+    <h1>Paw & Smile</h1>
+    <span>Pet Dental CRM</span>
+  </div>
+  <div class="nav">
+    <div class="nav-item active" onclick="showPage('clients',this)"><span class="ico">👥</span> Clients</div>
+    <div class="nav-item" onclick="showPage('outreach',this)"><span class="ico">🏷️</span> Outreach <span class="nav-badge" id="outreach-badge">0</span></div>
+    <div class="nav-item" onclick="showPage('scheduled',this)"><span class="ico">📋</span> Scheduled <span class="nav-badge" id="scheduled-badge" style="background:var(--sage-dark)">0</span></div>
+    <div class="nav-item" onclick="showPage('map',this)"><span class="ico">🗺️</span> Map</div>
+    <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
+    <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
+  </div>
+  <div class="sidebar-footer">Paw & Smile CRM v2.0</div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h2 id="page-title">Clients</h2>
+      <div class="search-wrap">
+        <span>🔍</span>
+        <input type="text" id="search-input" placeholder="Search by name, pet, phone…" oninput="renderClients()">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="btn btn-primary" onclick="openNewClientModal()">+ Add Client</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- CLIENTS PAGE -->
+    <div class="page active" id="page-clients">
+      <div class="stats-row">
+        <div class="stat-card c1"><div class="stat-ico">👥</div><div class="stat-lbl">Total Clients</div><div class="stat-val" id="s-clients">—</div><div class="stat-sub">in your CRM</div></div>
+        <div class="stat-card c2"><div class="stat-ico">💰</div><div class="stat-lbl">Total Revenue</div><div class="stat-val" id="s-revenue">—</div><div class="stat-sub">from all visits</div></div>
+        <div class="stat-card c3"><div class="stat-ico">🐾</div><div class="stat-lbl">Total Pets</div><div class="stat-val" id="s-pets">—</div><div class="stat-sub">across all clients</div></div>
+        <div class="stat-card c4"><div class="stat-ico">📅</div><div class="stat-lbl">Avg. per Visit</div><div class="stat-val" id="s-avg">—</div><div class="stat-sub">service price</div></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="tag-filters">
+          <button class="filter-pill active" onclick="setTagFilter('all',this)">All</button>
+          <button class="filter-pill overdue" onclick="setTagFilter('overdue',this)">🔴 Overdue</button>
+          <button class="filter-pill returning" onclick="setTagFilter('returning',this)">🟡 Returning</button>
+          <button class="filter-pill active-tag" onclick="setTagFilter('active',this)">🟢 Active</button>
+          <button class="filter-pill new-tag" onclick="setTagFilter('new',this)">🔵 New</button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="view-toggle active" id="vt-grid" onclick="setView('grid',this)" title="Grid view">⊞</button>
+          <button class="view-toggle" id="vt-list" onclick="setView('list',this)" title="List view">☰</button>
+        </div>
+      </div>
+      <div class="client-grid" id="client-grid"></div>
+      <table class="list-table" id="client-list-table" style="display:none">
+        <thead><tr><th>Client</th><th>Pets</th><th>Phone</th><th>Tag</th><th>Last Visit</th><th>Total Spent</th><th></th></tr></thead>
+        <tbody id="client-list-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- OUTREACH PAGE (Returning + Overdue) -->
+    <div class="page" id="page-outreach">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:10px">
+        <p style="font-size:13px;color:var(--muted)">Clients tagged <strong>Returning</strong> (5+ months) or <strong>Overdue</strong> (6+ months). Pins are color-coded on the map.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="filter-pill active" id="ot-all" onclick="setOutreachFilter('all',this)">All</button>
+          <button class="filter-pill" id="ot-overdue" onclick="setOutreachFilter('overdue',this)">🔴 Overdue</button>
+          <button class="filter-pill" id="ot-returning" onclick="setOutreachFilter('returning',this)">🟡 Returning</button>
+          <button class="view-toggle active" id="om-list" onclick="setOutreachView('list',this)" title="List">☰ List</button>
+          <button class="view-toggle" id="om-map" onclick="setOutreachView('map',this)" title="Map">🗺 Map</button>
+        </div>
+      </div>
+      <div id="outreach-list"></div>
+      <div id="outreach-map-wrap" style="display:none">
+        <div id="outreach-map" style="width:100%;height:520px;border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow)"></div>
+        <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px"><div style="width:14px;height:14px;border-radius:50%;background:#c0392b;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>Overdue</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px"><div style="width:14px;height:14px;border-radius:50%;background:#c4952a;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>Returning</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCHEDULED PAGE -->
+    <div class="page" id="page-scheduled">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Clients with a <strong>Scheduled</strong> appointment. Once marked Complete from their profile, they move back to the main client list and tags are cleared.</p>
+      <div id="scheduled-list"></div>
+    </div>
+
+    <!-- MAP PAGE -->
+    <div class="page" id="page-map">
+      <!-- Legend + daily route toggle -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:12px">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600"><div style="width:14px;height:14px;border-radius:50%;background:#27ae60;border:2.5px solid white;box-shadow:0 1px 4px rgba(0,0,0,.25)"></div>Had appointment</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600"><div style="width:14px;height:14px;border-radius:50%;background:#2980b9;border:2.5px solid white;box-shadow:0 1px 4px rgba(0,0,0,.25)"></div>Scheduled</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600"><div style="width:14px;height:14px;border-radius:50%;background:#f0b429;border:2.5px solid white;box-shadow:0 1px 4px rgba(0,0,0,.25)"></div>Returning (5 mo)</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600"><div style="width:14px;height:14px;border-radius:50%;background:#e74c3c;border:2.5px solid white;box-shadow:0 1px 4px rgba(0,0,0,.25)"></div>Overdue (6+ mo)</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button class="view-toggle" id="daily-route-btn" onclick="toggleDailyRoute(this)">📅 Daily Route</button>
+          <div id="daily-picker" style="display:none;align-items:center;gap:8px">
+            <input type="date" id="route-date" class="field-input" style="width:150px;padding:6px 10px" onchange="renderMainMap()">
+            <button class="btn btn-primary btn-sm" onclick="openRouteInMaps()">Open in Google Maps ↗</button>
+          </div>
+        </div>
+      </div>
+      <!-- info bar -->
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px" id="map-info-bar">Loading pins… clients need an address saved in their profile to appear.</div>
+      <!-- Map + sidebar -->
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:14px;height:570px">
+        <div id="main-map" style="border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow);height:100%"></div>
+        <div style="background:var(--white);border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow);overflow-y:auto;padding:14px">
+          <div style="font-family:'Playfair Display',serif;font-size:15px;color:var(--navy);margin-bottom:10px" id="map-sidebar-title">All Clients</div>
+          <div id="map-sidebar-list" style="font-size:13px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDAR PAGE -->
+    <div class="page" id="page-calendar">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn btn-outline btn-sm" onclick="calNav(-1)">‹ Prev</button>
+          <div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--navy)" id="cal-title"></div>
+          <button class="btn btn-outline btn-sm" onclick="calNav(1)">Next ›</button>
+          <button class="btn btn-outline btn-sm" onclick="calToday()">Today</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="view-toggle active" id="cv-month" onclick="setCalView('month',this)">Month</button>
+          <button class="view-toggle" id="cv-week" onclick="setCalView('week',this)">Week</button>
+        </div>
+      </div>
+      <!-- Legend -->
+      <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px"><div style="width:12px;height:12px;border-radius:3px;background:#4d7a52"></div>Completed</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px"><div style="width:12px;height:12px;border-radius:3px;background:#c4952a"></div>Scheduled</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px"><div style="width:12px;height:12px;border-radius:3px;background:#c0392b"></div>Cancelled</div>
+      </div>
+      <div id="cal-grid"></div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page" id="page-dashboard">
+      <div class="stats-row">
+        <div class="stat-card c1"><div class="stat-ico">✅</div><div class="stat-lbl">Completed</div><div class="stat-val" id="d-completed">—</div><div class="stat-sub">appointments</div></div>
+        <div class="stat-card c2"><div class="stat-ico">💰</div><div class="stat-lbl">Total Revenue</div><div class="stat-val" id="d-revenue">—</div><div class="stat-sub">all time</div></div>
+        <div class="stat-card c3"><div class="stat-ico">📅</div><div class="stat-lbl">Scheduled</div><div class="stat-val" id="d-scheduled">—</div><div class="stat-sub">upcoming</div></div>
+        <div class="stat-card c4"><div class="stat-ico">🚫</div><div class="stat-lbl">Cancelled</div><div class="stat-val" id="d-cancelled">—</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div style="background:var(--white);border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow);padding:22px;">
+          <div style="font-family:'Playfair Display',serif;font-size:16px;color:var(--navy);margin-bottom:16px">Revenue by Month (2026)</div>
+          <div id="mini-chart" style="display:flex;align-items:flex-end;gap:5px;height:100px;"></div>
+          <div id="mini-labels" style="display:flex;gap:5px;margin-top:4px;"></div>
+        </div>
+        <div style="background:var(--white);border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow);padding:22px;">
+          <div style="font-family:'Playfair Display',serif;font-size:16px;color:var(--navy);margin-bottom:14px">Top Clients by Revenue</div>
+          <div id="top-clients-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CLIENT PROFILE PANEL -->
+<div class="profile-overlay" id="profile-overlay" onclick="closeProfileOutside(event)">
+  <div class="profile-panel" id="profile-panel">
+    <div class="profile-banner">
+      <button class="profile-close" onclick="closeProfile()">✕</button>
+      <div class="profile-avatar" id="p-avatar">JD</div>
+      <div class="profile-name" id="p-name">Client Name</div>
+      <div class="profile-sub" id="p-sub">0 pets · 0 visits</div>
+      <div class="profile-stats">
+        <div class="profile-stat"><div class="val" id="p-visits">0</div><div class="lbl">Visits</div></div>
+        <div class="profile-stat"><div class="val" id="p-spent">$0</div><div class="lbl">Spent</div></div>
+        <div class="profile-stat"><div class="val" id="p-pets-count">0</div><div class="lbl">Pets</div></div>
+        <div class="profile-stat"><div class="val" id="p-last">—</div><div class="lbl">Last Visit</div></div>
+      </div>
+    </div>
+    <div class="profile-body">
+      <div class="section-title">Contact Information</div>
+      <div class="field-grid">
+        <div class="field-group"><label>Phone</label><input class="field-input" id="f-phone" type="tel" placeholder="(239) 555-0000"></div>
+        <div class="field-group"><label>Email</label><input class="field-input" id="f-email" type="email" placeholder="email@example.com"></div>
+        <div class="field-group field-full"><label>Address</label><input class="field-input" id="f-address" placeholder="Street address, city, FL ZIP"></div>
+        <div class="field-group"><label>Preferred Contact</label>
+          <select class="field-input" id="f-contact-pref">
+            <option value="">— Select —</option>
+            <option>Call</option><option>Text</option><option>Email</option>
+          </select>
+        </div>
+        <div class="field-group"><label>Referral Source</label>
+          <select class="field-input" id="f-referral">
+            <option value="">— Select —</option>
+            <option>Facebook</option><option>Instagram</option><option>Google</option>
+            <option>Word of Mouth</option><option>Nextdoor</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group" style="margin-bottom:6px"><label>Notes</label><textarea class="notes-area" id="f-notes" placeholder="Allergies, gate code, dog behavior, special instructions…"></textarea></div>
+      <div class="save-btn-wrap">
+        <button class="btn btn-primary" onclick="saveClientInfo()">💾 Save Changes</button>
+        <button class="btn btn-outline btn-sm" onclick="copyReminderForProfile()">📋 Copy Reminder</button>
+      </div>
+
+      <!-- MAP -->
+      <div id="map-section" style="display:none; margin-bottom:20px; position:relative; z-index:0; isolation:isolate;">
+        <div class="section-title" style="margin-bottom:10px">
+          📍 Location
+          <a id="map-directions-link" href="#" target="_blank" style="font-size:11px;font-weight:600;color:var(--sage-dark);text-decoration:none;margin-left:8px">Open in Google Maps ↗</a>
+        </div>
+        <div id="map-container" style="width:100%;height:200px;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:var(--warm);position:relative;isolation:isolate;z-index:0;"></div>
+      </div>
+
+      <hr class="divider">
+      <div class="section-title">Pets <button class="btn btn-outline btn-sm" onclick="openAddPetModal()">+ Add Pet</button></div>
+      <div class="pet-cards" id="p-pet-cards"></div>
+
+      <hr class="divider">
+      <div class="section-title">Appointment History</div>
+      <div class="timeline" id="p-timeline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW CLIENT MODAL -->
+<div class="modal-overlay" id="new-client-modal" onclick="closeNewClientOutside(event)">
+  <div class="modal">
+    <h3>➕ Add New Client</h3>
+    <div class="form-row">
+      <div class="form-group"><label>First Name</label><input id="nc-first" placeholder="First"></div>
+      <div class="form-group"><label>Last Name</label><input id="nc-last" placeholder="Last"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone</label><input id="nc-phone" type="tel" placeholder="(239) 555-0000"></div>
+      <div class="form-group"><label>Email</label><input id="nc-email" type="email" placeholder="email@example.com"></div>
+    </div>
+    <div class="form-group"><label>Address</label><input id="nc-address" placeholder="Street, City, FL ZIP"></div>
+    <div class="form-group">
+      <label>Pet Species</label>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="species-btn active" id="nc-species-dog" onclick="document.getElementById('nc-species').value='dog';this.classList.add('active');document.getElementById('nc-species-cat').classList.remove('active');updateNcPrice()">🐕 Dog</button>
+        <button type="button" class="species-btn" id="nc-species-cat" onclick="document.getElementById('nc-species').value='cat';this.classList.add('active');document.getElementById('nc-species-dog').classList.remove('active');updateNcPrice()">🐈 Cat</button>
+      </div>
+      <input type="hidden" id="nc-species" value="dog">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Pet Name</label><input id="nc-pet" placeholder="Pet's name"></div>
+      <div class="form-group"><label>Pet Breed</label><input id="nc-breed" placeholder="e.g. Labrador"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Pet Date of Birth</label><input id="nc-dob" type="date" oninput="document.getElementById('nc-age-display').textContent=calcAge(this.value)"><div id="nc-age-display" style="font-size:11px;color:var(--sage-dark);font-weight:600;margin-top:3px;min-height:14px"></div></div>
+      <div class="form-group"><label>Weight (lbs)</label><input id="nc-weightlbs" type="number" placeholder="e.g. 25" oninput="updateNcPrice()"><div id="nc-price-display" style="font-size:11px;color:var(--terra);font-weight:600;margin-top:3px;min-height:14px"></div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeNewClientModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addNewClient()">Add Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PET MODAL -->
+<div class="modal-overlay" id="add-pet-modal" onclick="closeAddPetOutside(event)">
+  <div class="modal">
+    <h3>🐾 Add Pet</h3>
+    <div class="form-group">
+      <label>Species</label>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="species-btn active" id="ap-species-dog" onclick="selectModalSpecies('dog')">🐕 Dog</button>
+        <button type="button" class="species-btn" id="ap-species-cat" onclick="selectModalSpecies('cat')">🐈 Cat</button>
+      </div>
+    </div>
+    <input type="hidden" id="ap-species" value="dog">
+    <div class="form-row">
+      <div class="form-group"><label>Pet Name</label><input id="ap-name" placeholder="Name"></div>
+      <div class="form-group"><label>Breed</label><input id="ap-breed" placeholder="e.g. Golden Retriever"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date of Birth</label>
+        <input id="ap-dob" type="date" oninput="updateModalAge()">
+        <div id="ap-age-display" style="font-size:11px;color:var(--sage-dark);font-weight:600;margin-top:4px;min-height:16px"></div>
+      </div>
+      <div class="form-group">
+        <label>Weight (lbs)</label>
+        <input id="ap-weightlbs" type="number" placeholder="e.g. 45" oninput="updateModalPrice()">
+        <div id="ap-price-display" style="font-size:11px;color:var(--terra);font-weight:600;margin-top:4px;min-height:16px"></div>
+      </div>
+    </div>
+    <div class="form-group"><label>Medical Notes</label><textarea id="ap-medical" style="height:60px" placeholder="Allergies, conditions, medications…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeAddPetModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addPet()">Add Pet</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── BASE APPOINTMENT DATA ──────────────────────────────────────────────────
+const BASE_APPTS = {"Litsa Adamov":{"pets":{"Mia":[{"date":"September 20, 2025","price":"205","status":"Completed"},{"date":"April 15, 2026 4:00 PM (EDT)","price":"205","status":"Scheduled"}]},"total_spent":205,"visits":1},"Felipe Costa":{"pets":{"Joaquim":[{"date":"November 27, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Shanta Ramkeesoon":{"pets":{"Yogi Bear":[{"date":"November 29, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Rosa Garcia":{"pets":{"Pookie":[{"date":"November 29, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Jennifer Fernanda":{"pets":{"Coco (JF)":[{"date":"November 29, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"John Derco":{"pets":{"Buddy":[{"date":"December 6, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Lucille Mascolo":{"pets":{"Lola (LM)":[{"date":"December 9, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Pauline":{"pets":{"Rio":[{"date":"December 9, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Jeniffer":{"pets":{"Evie":[{"date":"December 11, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Amy Treff":{"pets":{"Ginger (AT)":[{"date":"December 12, 2025","price":"205","status":"Completed"},{"date":"April 7, 2026","price":"205","status":"Completed"}]},"total_spent":410,"visits":2},"Cheryl Adams":{"pets":{"Imogene":[{"date":"December 19, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Carlos Gonzales":{"pets":{"Rocky (CG)":[{"date":"December 20, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Kim Giyoung":{"pets":{"Somi":[{"date":"December 22, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Meisy Rodriguez":{"pets":{"Penelope":[{"date":"December 29, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Jean Marzuchowky":{"pets":{"Katrina":[{"date":"December 27, 2025","price":"235","status":"Completed"}]},"total_spent":235,"visits":1},"Sung Ryu":{"pets":{"Rocky (SR)":[{"date":"December 30, 2025","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Keona Masip":{"pets":{"Kippy":[{"date":"January 6, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Kaile Park":{"pets":{"Monet":[{"date":"January 9, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Laura Jelderks":{"pets":{"Joe":[{"date":"January 9, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Shannon Burdick":{"pets":{"Jax":[{"date":"January 14, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Karen Seliger":{"pets":{"Barley":[{"date":"January 15, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Gabriele Sappok":{"pets":{"Ellie (GS)":[{"date":"January 16, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"James Visioli":{"pets":{"Charley":[{"date":"January 16, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Chevy Donato":{"pets":{"Hurley":[{"date":"January 16, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Monica Chan":{"pets":{"Frankie":[{"date":"January 17, 2026","price":"205","status":"Completed"}],"Ziffi":[{"date":"January 17, 2026","price":"205","status":"Scheduled"}]},"total_spent":205,"visits":1},"Bernadetta Lelina":{"pets":{"Mickey":[{"date":"January 24, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Amanda Duran":{"pets":{"Lobo":[{"date":"February 2, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Michelle Tanks":{"pets":{"Papi":[{"date":"February 7, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Jessica Escotto":{"pets":{"Donatello":[{"date":"February 7, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Margaret Lane-Boyle":{"pets":{"Ruby":[{"date":"February 7, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Karen Gonzalez":{"pets":{"Bear":[{"date":"February 10, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Mavell Blanco":{"pets":{"Micah":[{"date":"February 13, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Tara Schultz Santos":{"pets":{"Dexter":[{"date":"February 13, 2026","price":"235","status":"Completed"}]},"total_spent":235,"visits":1},"Jimmy Velez":{"pets":{"Ace":[{"date":"February 14, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Melinda Cherinos":{"pets":{"China":[{"date":"February 14, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Nancy L Wolff":{"pets":{"Wabi":[{"date":"February 16, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Melvin Menchita":{"pets":{"Benji (MM)":[{"date":"February 16, 2026","price":"205","status":"Completed"}],"Wolfie":[{"date":"February 16, 2026","price":"205","status":"Completed"}]},"total_spent":410,"visits":2},"Gloria Ford":{"pets":{"Zoey":[{"date":"February 17, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Leslie Hernandez":{"pets":{"Cookie":[{"date":"February 18, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Alice Sowin":{"pets":{"Millie":[{"date":"February 27, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Stefano Romero":{"pets":{"Kiara":[{"date":"February 28, 2026","price":"235","status":"Completed"}]},"total_spent":235,"visits":1},"Nery Marte":{"pets":{"Daisy (NM)":[{"date":"February 28, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Maribel Sarante":{"pets":{"Snow":[{"date":"March 6, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Julianna Haar":{"pets":{"Addie":[{"date":"March 7, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Graciela Londono":{"pets":{"Estrella (GL)":[{"date":"March 7, 2026","price":"205","status":"Completed"}],"Daisy(GL)":[{"date":"March 7, 2026","price":"205","status":"Completed"}]},"total_spent":410,"visits":2},"Matthew Pepe":{"pets":{"Ellie (MP)":[{"date":"March 7, 2026","price":"205","status":"Completed"}],"Alfredo":[{"date":"March 7, 2026","price":"205","status":"Completed"}]},"total_spent":410,"visits":2},"Roger Lackhan":{"pets":{"Britney":[{"date":"March 9, 2026","price":"205","status":"Completed"}],"Daie":[{"date":"March 9, 2026","price":"205","status":"Completed"}]},"total_spent":410,"visits":2},"Dawn Reech":{"pets":{"Maxi":[{"date":"March 9, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Gerry Burns":{"pets":{"Lance":[{"date":"March 13, 2026","price":"235","status":"Completed"}]},"total_spent":235,"visits":1},"Jesus Robles":{"pets":{"Chica":[{"date":"March 13, 2026","price":"205","status":"Completed"}],"Snuggles":[{"date":"March 13, 2026","price":"205","status":"Completed"}]},"total_spent":410,"visits":2},"Rhiza Lim":{"pets":{"Luna":[{"date":"March 14, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Shoniqua Curry":{"pets":{"Phoenix":[{"date":"March 14, 2026","price":"235","status":"Completed"}]},"total_spent":235,"visits":1},"Merly Vera":{"pets":{"Lola (MV)":[{"date":"March 17, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Sheronda Jordan":{"pets":{"Lucky":[{"date":"March 17, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Tom Sol":{"pets":{"Mufee":[{"date":"March 17, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Monica Nieves":{"pets":{"Ella":[{"date":"March 20, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Kari Chachkes":{"pets":{"Peanuts":[{"date":"March 23, 2026","price":"275","status":"Completed"}]},"total_spent":275,"visits":1},"Judy Liebb":{"pets":{"Choko":[{"date":"March 23, 2026","price":"235","status":"Completed"}]},"total_spent":235,"visits":1},"Katherine Curran":{"pets":{"Milo":[{"date":"March 24, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Johanny Fonseca":{"pets":{"Cosmos":[{"date":"March 26, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Terry Barbarini":{"pets":{"Blue":[{"date":"March 27, 2026","price":"275","status":"Completed"}]},"total_spent":275,"visits":1},"Mirrian Delman":{"pets":{"Chewy":[{"date":"March 27, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Anne Atlas":{"pets":{"Lonnie":[{"date":"March 27, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Shayna Holmes":{"pets":{"Charlie":[{"date":"March 27, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Lisette Maias":{"pets":{"Belly":[{"date":"March 28, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Emely Torres":{"pets":{"Lexy":[{"date":"March 28, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Jennifer Black":{"pets":{"Ginger (JB)":[{"date":"March 28, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Elizabeth Naifeh":{"pets":{"Sadie (EN)":[{"date":"April 2, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Merlina Nunez":{"pets":{"Kimba":[{"date":"April 3, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Francine Feliciano":{"pets":{"Phoebe":[{"date":"April 3, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Ciana Charity":{"pets":{"Ramses":[{"date":"April 4, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Nicole Polanco":{"pets":{"Poff":[{"date":"April 4, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Mariana Rodriguez":{"pets":{"Coco (MR)":[{"date":"April 4, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Julio Kranwinkel":{"pets":{"Katy":[{"date":"April 4, 2026","price":"205","status":"Completed"}],"Minnie":[{"date":"April 4, 2026","price":"205","status":"Completed"}]},"total_spent":410,"visits":2},"Catherine Camilo":{"pets":{"Blackie":[{"date":"April 4, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"George Wood":{"pets":{"Sadie":[{"date":"April 6, 2026","price":"235","status":"Completed"}]},"total_spent":235,"visits":1},"Doreen Dreifus":{"pets":{"Tonya":[{"date":"April 9, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Maria Naguirre":{"pets":{"Canelo":[{"date":"April 9, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Patricia Farrell":{"pets":{"Mickie":[{"date":"April 13, 2026","price":"295","status":"Completed"}],"Blue (PF)":[{"date":"April 13, 2026","price":"275","status":"Completed"}]},"total_spent":570,"visits":2},"Sugey Biaz":{"pets":{"Oreo":[{"date":"April 14, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Anita Perez":{"pets":{"Jackson":[{"date":"April 16, 2026","price":"205","status":"Completed"}],"Maple":[{"date":"April 16, 2026","price":"205","status":"Completed"}]},"total_spent":410,"visits":2},"Madeline Rodriguez":{"pets":{"Siji":[{"date":"April 17, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Nicole Mosboso":{"pets":{"April":[{"date":"April 18, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1},"Luiz Lopes":{"pets":{"Nina":[{"date":"April 18, 2026","price":"205","status":"Completed"}]},"total_spent":205,"visits":1}};
+
+// ── SUPABASE CONFIG ────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://nuvpqmnizwgdhhfqxozl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51dnBxbW5pendnZGhoZnF4b3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NTUyNzQsImV4cCI6MjA5NDIzMTI3NH0.h0-FaqjAoap9rcm4Y2T9TNXurVgmDhwuYCfeFPLZXNA';
+
+const sb = {
+  async req(method, path, body) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      method,
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': method === 'POST' ? 'resolution=merge-duplicates,return=representation' : 'return=representation'
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!res.ok) { const e = await res.text(); console.error('Supabase error:', e); return null; }
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  },
+  get: (path) => sb.req('GET', path),
+  post: (path, body) => sb.req('POST', path, body),
+  patch: (path, body) => sb.req('PATCH', path, body),
+  delete: (path) => sb.req('DELETE', path),
+};
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let clientExtra = {};
+let openClientName = null;
+let dbReady = false;
+
+// ── DB SETUP: create tables if they don't exist ───────────────────────────
+async function ensureTables() {
+  // Try to create tables via RPC — if they already exist this is a no-op
+  const sql = `
+    CREATE TABLE IF NOT EXISTS crm_clients (
+      id bigint generated always as identity primary key,
+      name text unique not null,
+      phone text, email text, address text,
+      contact_pref text, referral text, notes text,
+      lat double precision, lng double precision,
+      created_at timestamptz default now(),
+      updated_at timestamptz default now()
+    );
+    CREATE TABLE IF NOT EXISTS crm_pets (
+      id bigint generated always as identity primary key,
+      client_name text not null references crm_clients(name) on delete cascade,
+      pet_name text not null,
+      species text default 'dog',
+      breed text, dob text, weightlbs text,
+      dental text, medical text,
+      unique(client_name, pet_name)
+    );
+    CREATE TABLE IF NOT EXISTS crm_appointments (
+      id bigint generated always as identity primary key,
+      client_name text not null,
+      pet_name text not null,
+      appt_date text, price text,
+      status text default 'Scheduled',
+      created_at timestamptz default now()
+    );
+  `;
+  // Use Supabase SQL editor API
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: sql })
+    });
+    // If rpc doesn't exist, tables may already be set up — continue anyway
+  } catch(e) {}
+}
+
+// ── LOAD: pull all client data from Supabase ──────────────────────────────
+async function loadExtra() {
+  showLoading(true);
+  try {
+    // Load clients
+    const clients = await sb.get('crm_clients?select=*&order=name');
+    if (clients) {
+      clients.forEach(c => {
+        clientExtra[c.name] = {
+          phone: c.phone||'', email: c.email||'', address: c.address||'',
+          contactPref: c.contact_pref||'', referral: c.referral||'',
+          notes: c.notes||'', lat: c.lat, lng: c.lng,
+          petExtras: {}
+        };
+        if (c.lat && c.lng && c.address) geocodeCache[c.address] = { lat: c.lat, lng: c.lng };
+      });
+    }
+    // Load pets
+    const pets = await sb.get('crm_pets?select=*');
+    if (pets) {
+      pets.forEach(p => {
+        if (!clientExtra[p.client_name]) clientExtra[p.client_name] = { petExtras: {} };
+        if (!clientExtra[p.client_name].petExtras) clientExtra[p.client_name].petExtras = {};
+        clientExtra[p.client_name].petExtras[p.pet_name] = {
+          species: p.species||'dog', breed: p.breed||'', dob: p.dob||'',
+          weightlbs: p.weightlbs||'', dental: p.dental||'', medical: p.medical||''
+        };
+      });
+    }
+    // Load extra appointments (beyond base data)
+    const appts = await sb.get('crm_appointments?select=*&order=appt_date');
+    if (appts) {
+      appts.forEach(a => {
+        if (!BASE_APPTS[a.client_name]) BASE_APPTS[a.client_name] = { pets:{}, total_spent:0, visits:0 };
+        if (!BASE_APPTS[a.client_name].pets[a.pet_name]) BASE_APPTS[a.client_name].pets[a.pet_name] = [];
+        // Avoid duplicates
+        const exists = BASE_APPTS[a.client_name].pets[a.pet_name].some(v => v.date===a.appt_date && v.status===a.status);
+        if (!exists) {
+          BASE_APPTS[a.client_name].pets[a.pet_name].push({ date: a.appt_date, price: a.price, status: a.status, db_id: a.id });
+          if (a.status === 'Completed') {
+            BASE_APPTS[a.client_name].total_spent += parseInt(a.price)||0;
+            BASE_APPTS[a.client_name].visits++;
+          }
+        }
+      });
+    }
+    dbReady = true;
+  } catch(e) {
+    console.error('Load error:', e);
+    showToast('⚠️ Could not connect to database — working offline');
+    dbReady = false;
+  }
+  showLoading(false);
+}
+
+// ── SAVE CLIENT ───────────────────────────────────────────────────────────
+async function saveExtra(name) {
+  const ex = clientExtra[name];
+  if (!ex) return;
+  if (!dbReady) { showToast('⚠️ Not connected to database'); return; }
+  // Upsert client row
+  await sb.post('crm_clients', {
+    name, phone: ex.phone||null, email: ex.email||null, address: ex.address||null,
+    contact_pref: ex.contactPref||null, referral: ex.referral||null,
+    notes: ex.notes||null, lat: ex.lat||null, lng: ex.lng||null
+  });
+  // Upsert pet rows
+  if (ex.petExtras) {
+    for (const [petName, pe] of Object.entries(ex.petExtras)) {
+      await sb.post('crm_pets', {
+        client_name: name, pet_name: petName,
+        species: pe.species||'dog', breed: pe.breed||null, dob: pe.dob||null,
+        weightlbs: pe.weightlbs||null, dental: pe.dental||null, medical: pe.medical||null
+      });
+    }
+  }
+}
+
+// ── SAVE APPOINTMENT ──────────────────────────────────────────────────────
+async function saveAppointment(clientName, petName, date, price, status) {
+  if (!dbReady) return;
+  const result = await sb.post('crm_appointments', {
+    client_name: clientName, pet_name: petName,
+    appt_date: date, price: String(price), status
+  });
+  return result;
+}
+
+// ── LOADING SCREEN ────────────────────────────────────────────────────────
+function showLoading(show) {
+  let el = document.getElementById('loading-screen');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-screen';
+    el.style.cssText = 'position:fixed;inset:0;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;';
+    el.innerHTML = `<div style="font-size:48px">🐾</div>
+      <div style="font-family:\'Playfair Display\',serif;font-size:24px;color:white">Paw & Smile CRM</div>
+      <div style="color:rgba(255,255,255,0.5);font-size:14px" id="loading-msg">Connecting to database…</div>
+      <div style="width:200px;height:3px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;margin-top:8px">
+        <div id="loading-bar" style="height:100%;background:var(--sage);width:0%;transition:width 2s ease;border-radius:2px"></div>
+      </div>`;
+    document.body.appendChild(el);
+    setTimeout(() => { const b = document.getElementById('loading-bar'); if(b) b.style.width='90%'; }, 50);
+  }
+  if (!show) {
+    const b = document.getElementById('loading-bar'); if(b) b.style.width='100%';
+    setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity 0.4s'; setTimeout(()=>el.remove(),400); }, 300);
+  }
+  el.style.display = show ? 'flex' : 'flex';
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function initials(n) { return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+function fmtMoney(n) { return '$' + (parseInt(n)||0).toLocaleString(); }
+function parseDate(d) { try { const dt = new Date(d); return isNaN(dt)?null:dt; } catch { return null; } }
+function fmtDate(d) { const dt = parseDate(d); if (!dt) return d||'—'; return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function fmtShort(d) { const dt = parseDate(d); if (!dt) return '—'; return dt.toLocaleDateString('en-US',{month:'short',year:'numeric'}); }
+function allClients() {
+  const base = Object.keys(BASE_APPTS);
+  const extras = Object.keys(clientExtra).filter(k=>!base.includes(k));
+  return [...base, ...extras].sort((a,b)=>a.localeCompare(b));
+}
+function clientData(name) {
+  return BASE_APPTS[name] || { pets: {}, total_spent: 0, visits: 0 };
+}
+function lastVisitDate(name) {
+  const cd = clientData(name);
+  let last = null;
+  Object.values(cd.pets).forEach(visits=>{
+    visits.filter(v=>v.status==='Completed').forEach(v=>{
+      const dt = parseDate(v.date);
+      if (dt && (!last || dt > last)) last = dt;
+    });
+  });
+  return last;
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────
+function computeStats() {
+  const names = allClients();
+  let totalRev = 0, totalPets = 0, totalVisits = 0;
+  names.forEach(n => {
+    const cd = clientData(n);
+    totalRev += cd.total_spent;
+    totalPets += Object.keys(cd.pets).length;
+    totalVisits += cd.visits;
+  });
+  document.getElementById('s-clients').textContent = names.length;
+  document.getElementById('s-revenue').textContent = fmtMoney(totalRev);
+  document.getElementById('s-pets').textContent = totalPets;
+  document.getElementById('s-avg').textContent = totalVisits > 0 ? fmtMoney(Math.round(totalRev/totalVisits)) : '—';
+
+  // dashboard stats
+  let completed=0, scheduled=0, cancelled=0, dRev=0;
+  Object.values(BASE_APPTS).forEach(cd => {
+    Object.values(cd.pets).forEach(visits => {
+      visits.forEach(v => {
+        if (v.status==='Completed'){completed++;dRev+=parseInt(v.price)||0;}
+        else if (v.status==='Scheduled') scheduled++;
+        else if (v.status==='Cancelled') cancelled++;
+      });
+    });
+  });
+  document.getElementById('d-completed').textContent = completed;
+  document.getElementById('d-revenue').textContent = fmtMoney(dRev);
+  document.getElementById('d-scheduled').textContent = scheduled;
+  document.getElementById('d-cancelled').textContent = cancelled;
+}
+
+// ── CLIENT GRID ───────────────────────────────────────────────────────────
+function renderClients() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const names = allClients();
+  const filtered = names.filter(name => {
+    if (!q) return true;
+    const cd = clientData(name);
+    const ex = clientExtra[name] || {};
+    const petNames = Object.keys(cd.pets).join(' ').toLowerCase();
+    return name.toLowerCase().includes(q) || petNames.includes(q) ||
+      (ex.phone||'').includes(q) || (ex.email||'').toLowerCase().includes(q) ||
+      (ex.address||'').toLowerCase().includes(q);
+  });
+  const grid = document.getElementById('client-grid');
+  if (!filtered.length) { grid.innerHTML = '<div class="empty"><div class="emoji">🔍</div>No clients found</div>'; return; }
+  grid.innerHTML = filtered.map(name => {
+    const cd = clientData(name);
+    const ex = clientExtra[name] || {};
+    const pets = Object.keys(cd.pets);
+    const lastD = lastVisitDate(name);
+    return `<div class="client-card" onclick="openProfile('${name.replace(/'/g,"\\'")}')">
+      <div class="client-card-header">
+        <div class="avatar">${initials(name)}</div>
+        <div>
+          <div class="client-card-name">${name}</div>
+          <div class="client-card-meta">${pets.length} pet${pets.length!==1?'s':''} · ${cd.visits} visit${cd.visits!==1?'s':''}</div>
+        </div>
+      </div>
+      <div class="client-card-body">
+        <div class="pet-chips">${pets.map(p=>`<span class="pet-chip">🐾 ${p}</span>`).join('')}</div>
+        <div class="contact-line"><span class="ico">📞</span>${ex.phone?`<span>${ex.phone}</span>`:'<span class="contact-missing">No phone</span>'}</div>
+        <div class="contact-line"><span class="ico">📍</span>${ex.address?`<span>${ex.address}</span>`:'<span class="contact-missing">No address</span>'}</div>
+      </div>
+      <div class="client-card-footer">
+        <span>Last visit: <strong>${lastD?fmtDate(lastD.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})):'—'}</strong></span>
+        <span><strong>${fmtMoney(cd.total_spent)}</strong></span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── PROFILE PANEL ─────────────────────────────────────────────────────────
+function openProfile(name) {
+  openClientName = name;
+  const cd = clientData(name);
+  const ex = clientExtra[name] || {};
+  const pets = Object.keys(cd.pets);
+  const lastD = lastVisitDate(name);
+
+  document.getElementById('p-avatar').textContent = initials(name);
+  document.getElementById('p-name').textContent = name;
+  document.getElementById('p-sub').textContent = `${pets.length} pet${pets.length!==1?'s':''} · ${cd.visits} visit${cd.visits!==1?'s':''}`;
+  document.getElementById('p-visits').textContent = cd.visits;
+  document.getElementById('p-spent').textContent = fmtMoney(cd.total_spent);
+  document.getElementById('p-pets-count').textContent = pets.length;
+  document.getElementById('p-last').textContent = lastD ? fmtShort(lastD.toLocaleDateString()) : '—';
+
+  // Fill form
+  document.getElementById('f-phone').value = ex.phone || '';
+  document.getElementById('f-email').value = ex.email || '';
+  document.getElementById('f-address').value = ex.address || '';
+  document.getElementById('f-notes').value = ex.notes || '';
+  document.getElementById('f-contact-pref').value = ex.contactPref || '';
+  document.getElementById('f-referral').value = ex.referral || '';
+
+  renderPetCards(name, cd, ex);
+  renderTimeline(name, cd);
+  renderMap(ex.address || '');
+
+  document.getElementById('profile-overlay').classList.add('open');
+}
+
+function renderPetCards(name, cd, ex) {
+  const petExtras = ex.petExtras || {};
+  const html = Object.entries(cd.pets).map(([petName, visits]) => {
+    const pe = petExtras[petName] || {};
+    const completedVisits = visits.filter(v=>v.status==='Completed');
+    const lastPetVisit = completedVisits.length ? completedVisits[completedVisits.length-1].date : null;
+    return `<div class="pet-card">
+      <div class="pet-card-header" onclick="togglePet(this)">
+        <span class="pet-icon">${pe.species==='cat'?'🐈':'🐕'}</span>
+        <div>
+          <div class="pet-card-name">${petName}</div>
+          <div class="pet-card-sub">${completedVisits.length} visit${completedVisits.length!==1?'s':''} · Last: ${lastPetVisit?fmtDate(lastPetVisit):'—'}</div>
+        </div>
+        <span class="pet-toggle">▼</span>
+      </div>
+      <div class="pet-card-body" style="display:none">
+        <div class="pet-field-grid">
+          <!-- Species toggle -->
+          <div class="field-group" style="grid-column:1/-1">
+            <label>Species</label>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="species-btn${pe.species==='cat'?'':' active'}" data-val="dog"
+                onclick="setSpecies('${name}','${petName}',this,'dog')">🐕 Dog</button>
+              <button type="button" class="species-btn${pe.species==='cat'?' active':''}" data-val="cat"
+                onclick="setSpecies('${name}','${petName}',this,'cat')">🐈 Cat</button>
+            </div>
+          </div>
+          <div class="field-group"><label>Breed</label><input class="field-input" data-field="breed" value="${pe.breed||''}" placeholder="e.g. Labrador" onchange="savePetField('${name}','${petName}',this)"></div>
+          <!-- Birthdate + auto age -->
+          <div class="field-group">
+            <label>Date of Birth</label>
+            <input class="field-input" type="date" data-field="dob" value="${pe.dob||''}"
+              onchange="savePetField('${name}','${petName}',this); refreshAgeDisplay(this)">
+            <div class="age-display" id="age-${name.replace(/\W/g,'_')}-${petName.replace(/\W/g,'_')}"
+              style="font-size:11px;color:var(--sage-dark);font-weight:600;margin-top:4px;min-height:16px">
+              ${pe.dob ? calcAge(pe.dob) : ''}
+            </div>
+          </div>
+          <!-- Weight + auto price -->
+          <div class="field-group">
+            <label>Weight (lbs)</label>
+            <input class="field-input" type="number" data-field="weightlbs" value="${pe.weightlbs||''}" placeholder="e.g. 25"
+              onchange="savePetField('${name}','${petName}',this); refreshPriceDisplay(this,'${pe.species||'dog'}')">
+            <div class="price-display" id="price-${name.replace(/\W/g,'_')}-${petName.replace(/\W/g,'_')}"
+              style="font-size:11px;color:var(--terra);font-weight:600;margin-top:4px;min-height:16px">
+              ${pe.weightlbs ? '→ Suggested price: $' + calcPrice(pe.species||'dog', pe.weightlbs) : (pe.species==='cat' ? '→ Suggested price: $235' : '')}
+            </div>
+          </div>
+          <div class="field-group"><label>Dental Score</label>
+            <select class="field-input" onchange="savePetField('${name}','${petName}',this)" data-field="dental">
+              <option value="">— Rate —</option>
+              ${['1 - Excellent','2 - Good','3 - Fair','4 - Poor'].map(o=>`<option${pe.dental===o?' selected':''}>${o}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field-group" style="grid-column:1/-1"><label>Medical Notes</label><input class="field-input" data-field="medical" value="${pe.medical||''}" placeholder="Allergies, conditions, medications…" onchange="savePetField('${name}','${petName}',this)"></div>
+        </div>
+        <div class="visit-history">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Visit History</div>
+          ${visits.map(v=>`<div class="visit-row"><span>${fmtDate(v.date)}</span><span>${v.price?fmtMoney(v.price):'—'}</span><span class="badge badge-${v.status.toLowerCase()}">${v.status}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('p-pet-cards').innerHTML = html || '<div class="empty"><div class="emoji">🐾</div>No pets yet</div>';
+}
+
+function togglePet(header) {
+  const body = header.nextElementSibling;
+  const toggle = header.querySelector('.pet-toggle');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  toggle.textContent = open ? '▼' : '▲';
+}
+
+async function savePetField(clientName, petName, input) {
+  if (!clientExtra[clientName]) clientExtra[clientName] = {};
+  if (!clientExtra[clientName].petExtras) clientExtra[clientName].petExtras = {};
+  if (!clientExtra[clientName].petExtras[petName]) clientExtra[clientName].petExtras[petName] = {};
+  clientExtra[clientName].petExtras[petName][input.dataset.field] = input.value;
+  await saveExtra(clientName);
+  showToast('✅ Pet info saved');
+}
+
+function renderTimeline(name, cd) {
+  const allVisits = [];
+  Object.entries(cd.pets).forEach(([pet, visits]) => {
+    visits.forEach(v => allVisits.push({...v, pet}));
+  });
+  allVisits.sort((a,b) => {
+    const da = parseDate(a.date), db = parseDate(b.date);
+    return (db||0) - (da||0);
+  });
+  document.getElementById('p-timeline').innerHTML = allVisits.length ? allVisits.map(v=>`
+    <div class="tl-item">
+      <div class="tl-dot ${v.status.toLowerCase()}"></div>
+      <div class="tl-date">${fmtDate(v.date)}</div>
+      <div class="tl-content">
+        <span>🐾 ${v.pet}</span>
+        <span>${v.price?fmtMoney(v.price):'—'}</span>
+        <span class="badge badge-${v.status.toLowerCase()}">${v.status}</span>
+      </div>
+    </div>`).join('') : '<div class="empty"><div class="emoji">📅</div>No appointments yet</div>';
+}
+
+async function saveClientInfo() {
+  if (!openClientName) return;
+  if (!clientExtra[openClientName]) clientExtra[openClientName] = {};
+  const ex = clientExtra[openClientName];
+  ex.phone = document.getElementById('f-phone').value;
+  ex.email = document.getElementById('f-email').value;
+  ex.address = document.getElementById('f-address').value;
+  ex.notes = document.getElementById('f-notes').value;
+  ex.contactPref = document.getElementById('f-contact-pref').value;
+  ex.referral = document.getElementById('f-referral').value;
+  showToast('💾 Saving…');
+  if (ex.address) {
+    geocodeAddress(ex.address, async (lat, lng) => {
+      if (lat && lng) { ex.lat = lat; ex.lng = lng; }
+      await saveExtra(openClientName);
+      renderClients();
+      renderMap(ex.address);
+      showToast('✅ Saved to database!');
+    });
+  } else {
+    await saveExtra(openClientName);
+    renderClients();
+    renderMap('');
+    showToast('✅ Saved to database!');
+  }
+}
+
+let profileMapInstance = null;
+
+function renderMap(address) {
+  const section = document.getElementById('map-section');
+  const link = document.getElementById('map-directions-link');
+  if (!address || !address.trim()) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+
+  const container = document.getElementById('map-container');
+  // Cleanly destroy previous instance
+  if (profileMapInstance) { try { profileMapInstance.remove(); } catch(e){} profileMapInstance = null; }
+  container.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">📍 Locating…</div>';
+
+  geocodeAddress(address, (lat, lng) => {
+    if (!lat || !lng) {
+      container.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--muted);font-size:13px;padding:16px;text-align:center"><div style="font-size:28px">📍</div>Address not found.<br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}" target="_blank" style="color:var(--sage-dark);font-weight:600;font-size:12px">Search in Google Maps ↗</a></div>`;
+      return;
+    }
+    container.innerHTML = '';
+    container.style.height = '200px';
+    container.style.transform = 'translateZ(0)'; // force compositing layer — keeps Leaflet contained
+    profileMapInstance = L.map(container, { zoomControl:true, scrollWheelZoom:false, attributionControl:false }).setView([lat,lng], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(profileMapInstance);
+    const tag = openClientName ? getClientTag(openClientName) : 'active';
+    makePin(lat, lng, pinColor(tag))
+      .addTo(profileMapInstance)
+      .bindPopup(`<b>${openClientName||''}</b><br><span style="font-size:11px">${address}</span>`)
+      .openPopup();
+    setTimeout(() => { if (profileMapInstance) profileMapInstance.invalidateSize(); }, 400);
+  });
+}
+
+function closeProfile() { document.getElementById('profile-overlay').classList.remove('open'); openClientName = null; }
+function closeProfileOutside(e) { if(e.target===document.getElementById('profile-overlay')) closeProfile(); }
+
+function copyReminderForProfile() {
+  if (!openClientName) return;
+  const first = openClientName.split(' ')[0];
+  const cd = clientData(openClientName);
+  const ex = clientExtra[openClientName] || {};
+  const pets = Object.keys(cd.pets).join(' & ');
+  const msg = `Hi ${first}! 🐾 It's time for ${pets}'s next non-anesthetic dental cleaning. Would you like to schedule an appointment? Reply or call us anytime! — Paw & Smile Pet Dental`;
+  navigator.clipboard.writeText(msg).then(()=>showToast('📋 Reminder copied!'));
+}
+
+// ── PET PRICING & AGE ─────────────────────────────────────────────────────
+function calcPrice(species, weightlbs) {
+  if (species === 'cat') return 235;
+  const w = parseFloat(weightlbs) || 0;
+  if (w <= 30) return 205;
+  if (w <= 70) return 235;
+  if (w <= 100) return 275;
+  return 295;
+}
+function calcAge(dob) {
+  if (!dob) return '';
+  const birth = new Date(dob);
+  if (isNaN(birth)) return '';
+  const now = new Date();
+  let years = now.getFullYear() - birth.getFullYear();
+  let months = now.getMonth() - birth.getMonth();
+  if (months < 0) { years--; months += 12; }
+  if (years === 0) return `${months} month${months !== 1 ? 's' : ''} old`;
+  if (months === 0) return `${years} year${years !== 1 ? 's' : ''} old`;
+  return `${years} yr${years !== 1 ? 's' : ''}, ${months} mo old`;
+}
+async function setSpecies(clientName, petName, btn, species) {
+  btn.closest('.pet-field-grid').querySelectorAll('.species-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (!clientExtra[clientName]) clientExtra[clientName] = {};
+  if (!clientExtra[clientName].petExtras) clientExtra[clientName].petExtras = {};
+  if (!clientExtra[clientName].petExtras[petName]) clientExtra[clientName].petExtras[petName] = {};
+  clientExtra[clientName].petExtras[petName].species = species;
+  await saveExtra(clientName);
+  const priceEl = document.getElementById(`price-${clientName.replace(/\W/g,'_')}-${petName.replace(/\W/g,'_')}`);
+  if (priceEl) {
+    const pe = clientExtra[clientName].petExtras[petName];
+    priceEl.textContent = (species==='cat'||pe.weightlbs) ? `→ Suggested price: $${calcPrice(species, pe.weightlbs)}` : '';
+  }
+  showToast('✅ Species saved');
+}
+function refreshAgeDisplay(input) {
+  const card = input.closest('.pet-card-body');
+  if (!card) return;
+  const header = card.previousElementSibling;
+  const petName = header.querySelector('.pet-card-name').textContent;
+  const clientName = openClientName;
+  const id = `age-${clientName.replace(/\W/g,'_')}-${petName.replace(/\W/g,'_')}`;
+  const el = document.getElementById(id);
+  if (el) el.textContent = calcAge(input.value);
+}
+function refreshPriceDisplay(input, speciesHint) {
+  const card = input.closest('.pet-card-body');
+  if (!card) return;
+  const header = card.previousElementSibling;
+  const petName = header.querySelector('.pet-card-name').textContent;
+  const clientName = openClientName;
+  // Determine species from saved data
+  const pe = (clientExtra[clientName]?.petExtras?.[petName]) || {};
+  const species = pe.species || speciesHint || 'dog';
+  const id = `price-${clientName.replace(/\W/g,'_')}-${petName.replace(/\W/g,'_')}`;
+  const el = document.getElementById(id);
+  if (el) {
+    const price = calcPrice(species, input.value);
+    el.textContent = input.value || species === 'cat' ? `→ Suggested price: $${price}` : '';
+  }
+}
+// Modal species helpers
+function selectModalSpecies(s) {
+  document.getElementById('ap-species').value = s;
+  document.getElementById('ap-species-dog').classList.toggle('active', s === 'dog');
+  document.getElementById('ap-species-cat').classList.toggle('active', s === 'cat');
+  updateModalPrice();
+}
+function updateModalAge() {
+  const dob = document.getElementById('ap-dob').value;
+  document.getElementById('ap-age-display').textContent = calcAge(dob);
+}
+function updateModalPrice() {
+  const species = document.getElementById('ap-species').value;
+  const w = document.getElementById('ap-weightlbs').value;
+  const price = calcPrice(species, w);
+  const el = document.getElementById('ap-price-display');
+  if (species === 'cat' || w) {
+    el.textContent = `→ Suggested price: $${price}`;
+  } else {
+    el.textContent = '';
+  }
+}
+
+// ── ADD PET MODAL ─────────────────────────────────────────────────────────
+function openAddPetModal() { document.getElementById('add-pet-modal').classList.add('open'); }
+function closeAddPetModal() { document.getElementById('add-pet-modal').classList.remove('open'); }
+function closeAddPetOutside(e) { if(e.target===document.getElementById('add-pet-modal')) closeAddPetModal(); }
+async function addPet() {
+  const name = document.getElementById('ap-name').value.trim();
+  if (!name || !openClientName) { showToast('⚠️ Pet name required'); return; }
+  if (!clientExtra[openClientName]) clientExtra[openClientName] = {};
+  if (!clientExtra[openClientName].petExtras) clientExtra[openClientName].petExtras = {};
+  clientExtra[openClientName].petExtras[name] = {
+    species: document.getElementById('ap-species').value || 'dog',
+    breed: document.getElementById('ap-breed').value,
+    dob: document.getElementById('ap-dob').value,
+    weightlbs: document.getElementById('ap-weightlbs').value,
+    medical: document.getElementById('ap-medical').value,
+  };
+  if (!BASE_APPTS[openClientName]) BASE_APPTS[openClientName] = {pets:{},total_spent:0,visits:0};
+  if (!BASE_APPTS[openClientName].pets[name]) BASE_APPTS[openClientName].pets[name] = [];
+  await saveExtra(openClientName);
+  closeAddPetModal();
+  ['ap-name','ap-breed','ap-dob','ap-weightlbs','ap-medical'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ap-species').value = 'dog';
+  document.getElementById('ap-species-dog').classList.add('active');
+  document.getElementById('ap-species-cat').classList.remove('active');
+  document.getElementById('ap-age-display').textContent = '';
+  document.getElementById('ap-price-display').textContent = '';
+  openProfile(openClientName);
+  showToast(`✅ ${name} added!`);
+}
+
+// ── NEW CLIENT MODAL ──────────────────────────────────────────────────────
+function openNewClientModal() { document.getElementById('new-client-modal').classList.add('open'); }
+function closeNewClientModal() { document.getElementById('new-client-modal').classList.remove('open'); }
+function closeNewClientOutside(e) { if(e.target===document.getElementById('new-client-modal')) closeNewClientModal(); }
+function updateNcPrice() {
+  const s = document.getElementById('nc-species').value;
+  const w = document.getElementById('nc-weightlbs').value;
+  const el = document.getElementById('nc-price-display');
+  if (el) el.textContent = (s==='cat'||w) ? `→ Suggested price: $${calcPrice(s,w)}` : '';
+}
+
+async function addNewClient() {
+  const first = document.getElementById('nc-first').value.trim();
+  const last = document.getElementById('nc-last').value.trim();
+  if (!first) { showToast('⚠️ First name required'); return; }
+  const fullName = last ? `${first} ${last}` : first;
+  if (!BASE_APPTS[fullName]) BASE_APPTS[fullName] = {pets:{},total_spent:0,visits:0};
+  const petName = document.getElementById('nc-pet').value.trim();
+  if (petName) BASE_APPTS[fullName].pets[petName] = [];
+  if (!clientExtra[fullName]) clientExtra[fullName] = {};
+  clientExtra[fullName].phone = document.getElementById('nc-phone').value;
+  clientExtra[fullName].email = document.getElementById('nc-email').value;
+  clientExtra[fullName].address = document.getElementById('nc-address').value;
+  if (petName) {
+    if (!clientExtra[fullName].petExtras) clientExtra[fullName].petExtras = {};
+    clientExtra[fullName].petExtras[petName] = {
+      species: document.getElementById('nc-species').value || 'dog',
+      breed: document.getElementById('nc-breed').value,
+      dob: document.getElementById('nc-dob').value,
+      weightlbs: document.getElementById('nc-weightlbs').value,
+    };
+  }
+  await saveExtra(fullName); closeNewClientModal(); computeStats(); renderClients();
+  showToast(`✅ ${fullName} added to database!`);
+  ['nc-first','nc-last','nc-phone','nc-email','nc-address','nc-pet','nc-breed','nc-dob','nc-weightlbs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nc-species').value='dog';
+  document.getElementById('nc-species-dog').classList.add('active');
+  document.getElementById('nc-species-cat').classList.remove('active');
+  const ageEl=document.getElementById('nc-age-display'); if(ageEl) ageEl.textContent='';
+  const priceEl=document.getElementById('nc-price-display'); if(priceEl) priceEl.textContent='';
+}
+
+// ── TAGGING SYSTEM ────────────────────────────────────────────────────────
+// tag(name) → 'overdue' | 'returning' | 'scheduled' | 'active' | 'new'
+function getClientTag(name) {
+  const cd = clientData(name);
+  // If any pet has a scheduled appointment, tag as scheduled
+  let hasScheduled = false;
+  Object.values(cd.pets).forEach(visits => {
+    visits.forEach(v => { if (v.status === 'Scheduled') hasScheduled = true; });
+  });
+  if (hasScheduled) return 'scheduled';
+
+  const last = lastVisitDate(name);
+  if (!last) return 'new';
+  const now = new Date();
+  const diffDays = (now - last) / (1000 * 60 * 60 * 24);
+  if (diffDays >= 180) return 'overdue';      // 6+ months
+  if (diffDays >= 150) return 'returning';    // 5+ months
+  return 'active';
+}
+function tagLabel(tag) {
+  return {overdue:'🔴 Overdue', returning:'🟡 Returning', scheduled:'🟢 Scheduled', active:'🟢 Active', new:'🔵 New'}[tag] || tag;
+}
+function tagClass(tag) {
+  return {overdue:'tag-overdue', returning:'tag-returning', scheduled:'tag-scheduled', active:'tag-active', new:'tag-new'}[tag] || '';
+}
+
+// ── CLIENT VIEW STATE ─────────────────────────────────────────────────────
+let currentView = 'grid'; // 'grid' | 'list'
+let currentTagFilter = 'all';
+
+function setView(v, btn) {
+  currentView = v;
+  document.querySelectorAll('.view-toggle').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderClients();
+}
+function setTagFilter(f, btn) {
+  currentTagFilter = f;
+  document.querySelectorAll('#tag-filters .filter-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderClients();
+}
+
+// ── RENDER CLIENTS ────────────────────────────────────────────────────────
+function renderClients() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const names = allClients();
+  let filtered = names.filter(name => {
+    const cd = clientData(name);
+    const ex = clientExtra[name] || {};
+    const petNames = Object.keys(cd.pets).join(' ').toLowerCase();
+    const matchSearch = !q || name.toLowerCase().includes(q) || petNames.includes(q) ||
+      (ex.phone||'').includes(q) || (ex.email||'').toLowerCase().includes(q) ||
+      (ex.address||'').toLowerCase().includes(q);
+    const tag = getClientTag(name);
+    const matchTag = currentTagFilter === 'all' || tag === currentTagFilter;
+    return matchSearch && matchTag;
+  });
+
+  const grid = document.getElementById('client-grid');
+  const listTable = document.getElementById('client-list-table');
+  const listBody = document.getElementById('client-list-tbody');
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty"><div class="emoji">🔍</div>No clients found</div>';
+    listBody.innerHTML = '<tr><td colspan="7" class="empty">No clients found</td></tr>';
+  } else if (currentView === 'grid') {
+    grid.style.display = 'grid';
+    listTable.style.display = 'none';
+    grid.innerHTML = filtered.map(name => {
+      const cd = clientData(name);
+      const ex = clientExtra[name] || {};
+      const pets = Object.keys(cd.pets);
+      const lastD = lastVisitDate(name);
+      const tag = getClientTag(name);
+      return `<div class="client-card" onclick="openProfile('${name.replace(/'/g,"\\'")}')">
+        <div class="client-card-header">
+          <div class="avatar">${initials(name)}</div>
+          <div style="flex:1">
+            <div class="client-card-name">${name}</div>
+            <div class="client-card-meta">${pets.length} pet${pets.length!==1?'s':''} · ${cd.visits} visit${cd.visits!==1?'s':''}</div>
+          </div>
+          <span class="tag ${tagClass(tag)}">${tagLabel(tag)}</span>
+        </div>
+        <div class="client-card-body">
+          <div class="pet-chips">${pets.map(p=>`<span class="pet-chip">${(clientExtra[name]?.petExtras?.[p]?.species==='cat'?'🐈':'🐾')} ${p}</span>`).join('')}</div>
+          <div class="contact-line"><span class="ico">📞</span>${ex.phone?`<span>${ex.phone}</span>`:'<span class="contact-missing">No phone</span>'}</div>
+          <div class="contact-line"><span class="ico">📍</span>${ex.address?`<span>${ex.address}</span>`:'<span class="contact-missing">No address</span>'}</div>
+        </div>
+        <div class="client-card-footer">
+          <span>Last visit: <strong>${lastD?fmtDate(lastD.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})):'—'}</strong></span>
+          <span><strong>${fmtMoney(cd.total_spent)}</strong></span>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    grid.style.display = 'none';
+    listTable.style.display = 'table';
+    listBody.innerHTML = filtered.map(name => {
+      const cd = clientData(name);
+      const ex = clientExtra[name] || {};
+      const pets = Object.keys(cd.pets);
+      const lastD = lastVisitDate(name);
+      const tag = getClientTag(name);
+      return `<tr style="cursor:pointer" onclick="openProfile('${name.replace(/'/g,"\\'")}')">
+        <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="width:32px;height:32px;font-size:11px;flex-shrink:0">${initials(name)}</div><div><div style="font-weight:600">${name}</div><div style="font-size:11px;color:var(--muted)">${ex.phone||'—'}</div></div></div></td>
+        <td>${pets.join(', ')||'—'}</td>
+        <td>${ex.phone||'—'}</td>
+        <td><span class="tag ${tagClass(tag)}">${tagLabel(tag)}</span></td>
+        <td>${lastD?fmtDate(lastD.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})):'—'}</td>
+        <td>${fmtMoney(cd.total_spent)}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openProfile('${name.replace(/'/g,"\\'")}')">View</button></td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ── OUTREACH PAGE ─────────────────────────────────────────────────────────
+let outreachFilter = 'all';
+function setOutreachFilter(f, btn) {
+  outreachFilter = f;
+  document.querySelectorAll('#page-outreach .filter-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildOutreach();
+}
+function buildOutreach() {
+  const names = allClients().filter(n => {
+    const tag = getClientTag(n);
+    if (outreachFilter === 'overdue') return tag === 'overdue';
+    if (outreachFilter === 'returning') return tag === 'returning';
+    return tag === 'overdue' || tag === 'returning';
+  });
+  // Update badge
+  const allCount = allClients().filter(n => { const t = getClientTag(n); return t==='overdue'||t==='returning'; }).length;
+  document.getElementById('outreach-badge').textContent = allCount;
+
+  const list = document.getElementById('outreach-list');
+  if (!names.length) { list.innerHTML = '<div class="empty"><div class="emoji">✅</div>No clients need outreach right now!</div>'; }
+  else list.innerHTML = names.map(name => {
+    const tag = getClientTag(name);
+    const last = lastVisitDate(name);
+    const ex = clientExtra[name] || {};
+    const pets = Object.keys(clientData(name).pets);
+    const daysAgo = last ? Math.floor((new Date()-last)/(1000*60*60*24)) : 0;
+    return `<div style="background:var(--white);border-radius:14px;border:1px solid var(--border);padding:16px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow)">
+      <div class="avatar" style="flex-shrink:0">${initials(name)}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <span style="font-weight:700;color:var(--navy);font-size:14px">${name}</span>
+          <span class="tag ${tagClass(tag)}">${tagLabel(tag)}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted)">Pets: ${pets.join(', ')} · Last visit: ${last?fmtDate(last.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})):'—'} (${daysAgo} days ago)</div>
+        ${ex.phone ? `<div style="font-size:12px;color:var(--sage-dark);margin-top:2px">📞 ${ex.phone}</div>` : ''}
+        ${ex.address ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">📍 ${ex.address}</div>` : ''}
+      </div>
+      <button class="btn btn-sm btn-outline" onclick="openProfile('${name.replace(/'/g,"\\'")}')">Profile</button>
+      <button class="btn btn-sm btn-primary" onclick="copyClientReminder('${name.replace(/'/g,"\\'")}')">📋 Copy Message</button>
+    </div>`;
+  }).join('');
+
+  // Refresh map if in map view
+  if (outreachViewMode === 'map') renderOutreachMap();
+}
+
+// ── SCHEDULED PAGE ────────────────────────────────────────────────────────
+function buildScheduled() {
+  const scheduled = [];
+  allClients().forEach(name => {
+    const cd = clientData(name);
+    Object.entries(cd.pets).forEach(([pet, visits]) => {
+      visits.filter(v=>v.status==='Scheduled').forEach(v => {
+        scheduled.push({name, pet, date: v.date, price: v.price});
+      });
+    });
+  });
+  scheduled.sort((a,b) => (parseDate(a.date)||0) - (parseDate(b.date)||0));
+  document.getElementById('scheduled-badge').textContent = scheduled.length;
+
+  const list = document.getElementById('scheduled-list');
+  if (!scheduled.length) { list.innerHTML = '<div class="empty"><div class="emoji">📅</div>No scheduled appointments yet</div>'; return; }
+  list.innerHTML = scheduled.map(({name,pet,date,price}) => {
+    const ex = clientExtra[name] || {};
+    return `<div style="background:var(--white);border-radius:14px;border:1px solid var(--border);border-left:4px solid var(--gold);padding:16px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow)">
+      <div class="avatar" style="flex-shrink:0">${initials(name)}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;color:var(--navy);font-size:14px">${name}</div>
+        <div style="font-size:12px;color:var(--muted)">🐾 ${pet} · ${fmtDate(date)} · ${price?fmtMoney(price):'—'}</div>
+        ${ex.address?`<div style="font-size:12px;color:var(--muted);margin-top:2px">📍 ${ex.address}</div>`:''}
+      </div>
+      <span class="tag tag-scheduled">🟡 Scheduled</span>
+      <button class="btn btn-sm btn-outline" onclick="openProfile('${name.replace(/'/g,"\\'")}')">View Profile</button>
+    </div>`;
+  }).join('');
+}
+
+// ── CALENDAR ──────────────────────────────────────────────────────────────
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calViewMode = 'month';
+let calWeekOffset = 0; // weeks from current week
+
+// Flatten all appointments for calendar
+function allAppointments() {
+  const appts = [];
+  allClients().forEach(name => {
+    const cd = clientData(name);
+    Object.entries(cd.pets).forEach(([pet, visits]) => {
+      visits.forEach(v => {
+        if (!v.date) return;
+        const dt = parseDate(v.date);
+        if (!dt) return;
+        appts.push({name, pet, date: dt, price: v.price, status: v.status});
+      });
+    });
+  });
+  return appts;
+}
+
+function setCalView(mode, btn) {
+  calViewMode = mode;
+  document.querySelectorAll('[id^="cv-"]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCalendar();
+}
+function calNav(dir) {
+  if (calViewMode === 'month') {
+    calMonth += dir;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+  } else {
+    calWeekOffset += dir;
+  }
+  renderCalendar();
+}
+function calToday() {
+  calYear = new Date().getFullYear();
+  calMonth = new Date().getMonth();
+  calWeekOffset = 0;
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const appts = allAppointments();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  if (calViewMode === 'month') {
+    document.getElementById('cal-title').textContent = `${months[calMonth]} ${calYear}`;
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+    const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+
+    let html = '<div class="cal-month">';
+    days.forEach(d => html += `<div class="cal-day-header">${d}</div>`);
+
+    // Prev month overflow
+    for (let i = firstDay-1; i >= 0; i--) {
+      html += `<div class="cal-day other-month"><div class="cal-day-num">${daysInPrev-i}</div></div>`;
+    }
+    // Current month
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cellDate = new Date(calYear, calMonth, d);
+      const isToday = cellDate.getTime() === today.getTime();
+      const dayAppts = appts.filter(a => {
+        const ad = new Date(a.date); ad.setHours(0,0,0,0);
+        return ad.getTime() === cellDate.getTime();
+      });
+      html += `<div class="cal-day${isToday?' today':''}">
+        <div class="cal-day-num">${d}</div>
+        ${dayAppts.slice(0,3).map(a=>`<div class="cal-event ${a.status.toLowerCase()}" title="${a.name} — ${a.pet}" onclick="openProfile('${a.name.replace(/'/g,"\\'")}')">🐾 ${a.name.split(' ')[0]} (${a.pet})</div>`).join('')}
+        ${dayAppts.length>3?`<div style="font-size:9px;color:var(--muted);margin-top:2px">+${dayAppts.length-3} more</div>`:''}
+      </div>`;
+    }
+    // Next month fill
+    const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+    for (let i = 1; i <= totalCells - firstDay - daysInMonth; i++) {
+      html += `<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+    }
+    html += '</div>';
+    document.getElementById('cal-grid').innerHTML = html;
+
+  } else {
+    // Week view
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + calWeekOffset * 7);
+    const weekDates = Array.from({length:7}, (_,i) => { const d = new Date(startOfWeek); d.setDate(d.getDate()+i); return d; });
+    const startStr = weekDates[0].toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const endStr = weekDates[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    document.getElementById('cal-title').textContent = `${startStr} – ${endStr}`;
+
+    const hours = [8,9,10,11,12,13,14,15,16,17,18];
+    let html = '<div class="cal-week">';
+    // Headers
+    html += '<div class="week-time"></div>';
+    weekDates.forEach(d => {
+      const isToday = d.getTime() === today.getTime();
+      html += `<div class="week-header${isToday?' today':''}">${days[d.getDay()]}<br><span style="font-size:14px;font-weight:700;color:${isToday?'var(--sage-dark)':'var(--navy)'}">${d.getDate()}</span></div>`;
+    });
+    hours.forEach(h => {
+      const label = h === 12 ? '12 PM' : h < 12 ? `${h} AM` : `${h-12} PM`;
+      html += `<div class="week-time">${label}</div>`;
+      weekDates.forEach(d => {
+        const isToday = d.getTime() === today.getTime();
+        const cellAppts = appts.filter(a => {
+          const ad = new Date(a.date);
+          const sameDay = ad.getFullYear()===d.getFullYear() && ad.getMonth()===d.getMonth() && ad.getDate()===d.getDate();
+          const apptHour = ad.getHours();
+          return sameDay && apptHour === h;
+        });
+        html += `<div class="week-cell${isToday?' today':''}">
+          ${cellAppts.map(a=>`<div class="cal-event ${a.status.toLowerCase()}" style="font-size:9px" onclick="openProfile('${a.name.replace(/'/g,"\\'")}')">🐾 ${a.name.split(' ')[0]}</div>`).join('')}
+        </div>`;
+      });
+    });
+    html += '</div>';
+    document.getElementById('cal-grid').innerHTML = html;
+  }
+}
+
+// ── REMINDERS (kept for compatibility) ───────────────────────────────────
+function buildReminders() {
+  buildOutreach();
+  buildScheduled();
+}
+
+function copyClientReminder(name) {
+  const first = name.split(' ')[0];
+  const pets = Object.keys(clientData(name).pets).join(' & ') || 'your pet';
+  const msg = `Hi ${first}! 🐾 It's been a while since ${pets}'s last non-anesthetic dental cleaning. Ready to book? Reply to this message or call/text us! — Paw & Smile Pet Dental`;
+  navigator.clipboard.writeText(msg).then(()=>showToast('📋 Message copied!'));
+}
+
+// ── DASHBOARD CHART ───────────────────────────────────────────────────────
+function buildDashboard() {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const rev = new Array(12).fill(0);
+  let completed=0, scheduled=0, cancelled=0, dRev=0;
+  Object.values(BASE_APPTS).forEach(cd => {
+    Object.values(cd.pets).forEach(visits => {
+      visits.forEach(v => {
+        if (v.status==='Completed'){completed++;dRev+=parseInt(v.price)||0;}
+        else if (v.status==='Scheduled') scheduled++;
+        else if (v.status==='Cancelled') cancelled++;
+        const dt = parseDate(v.date);
+        if (dt && dt.getFullYear()===2026 && v.status==='Completed') rev[dt.getMonth()] += parseInt(v.price)||0;
+      });
+    });
+  });
+  document.getElementById('d-completed').textContent = completed;
+  document.getElementById('d-revenue').textContent = fmtMoney(dRev);
+  document.getElementById('d-scheduled').textContent = scheduled;
+  document.getElementById('d-cancelled').textContent = cancelled;
+
+  const max = Math.max(...rev,1);
+  document.getElementById('mini-chart').innerHTML = rev.map((v)=>`
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+      <div style="font-size:9px;color:var(--sage-dark);font-weight:600">${v>0?'$'+(v/1000).toFixed(1)+'k':''}</div>
+      <div style="width:100%;border-radius:4px 4px 0 0;background:${v>0?'var(--sage)':'var(--border)'};height:${Math.round((v/max)*90)}px;min-height:3px;transition:all .3s"></div>
+    </div>`).join('');
+  document.getElementById('mini-labels').innerHTML = months.map(m=>`<div style="flex:1;text-align:center;font-size:9px;color:var(--muted)">${m}</div>`).join('');
+
+  const sorted = Object.entries(BASE_APPTS).sort((a,b)=>b[1].total_spent-a[1].total_spent).slice(0,6);
+  document.getElementById('top-clients-list').innerHTML = sorted.map(([name,cd])=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div class="avatar" style="width:32px;height:32px;font-size:11px;flex-shrink:0">${initials(name)}</div>
+      <div style="flex:1"><div style="font-weight:600;font-size:13px">${name}</div><div style="font-size:11px;color:var(--muted)">${Object.keys(cd.pets).length} pet${Object.keys(cd.pets).length!==1?'s':''}</div></div>
+      <div style="font-weight:700;color:var(--sage-dark);font-size:13px">${fmtMoney(cd.total_spent)}</div>
+    </div>`).join('');
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const rows = [['Client','Phone','Email','Address','Tag','Pets','Visits','Total Spent','Last Visit','Notes']];
+  allClients().forEach(name => {
+    const cd = clientData(name);
+    const ex = clientExtra[name] || {};
+    const last = lastVisitDate(name);
+    const tag = getClientTag(name);
+    rows.push([
+      name, ex.phone||'', ex.email||'', ex.address||'', tag,
+      Object.keys(cd.pets).join(' | '), cd.visits, cd.total_spent,
+      last?last.toLocaleDateString():'', (ex.notes||'').replace(/\n/g,' ')
+    ]);
+  });
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'paw-smile-clients.csv'; a.click();
+  showToast('⬇ CSV exported!');
+}
+
+// ── OUTREACH MAP VIEW TOGGLE ──────────────────────────────────────────────
+let outreachViewMode = 'list';
+let outreachMapInstance = null;
+let outreachMarkers = [];
+
+function setOutreachView(v, btn) {
+  outreachViewMode = v;
+  document.querySelectorAll('#page-outreach .view-toggle').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('outreach-list').style.display = v==='list' ? 'block' : 'none';
+  document.getElementById('outreach-map-wrap').style.display = v==='map' ? 'block' : 'none';
+  if (v==='map') renderOutreachMap();
+}
+
+function renderOutreachMap() {
+  const names = allClients().filter(n => {
+    const tag = getClientTag(n);
+    if (outreachFilter === 'overdue') return tag === 'overdue';
+    if (outreachFilter === 'returning') return tag === 'returning';
+    return tag === 'overdue' || tag === 'returning';
+  }).filter(n => (clientExtra[n]||{}).address);
+
+  if (!outreachMapInstance) {
+    outreachMapInstance = L.map('outreach-map').setView([26.2, -81.8], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors', maxZoom: 19
+    }).addTo(outreachMapInstance);
+  } else {
+    outreachMarkers.forEach(m => m.remove());
+    outreachMarkers = [];
+  }
+
+  const tagColors = { overdue: '#c0392b', returning: '#c4952a' };
+  let geocodeQueue = names.slice();
+  let bounds = [];
+
+  function geocodeNext() {
+    if (!geocodeQueue.length) {
+      if (bounds.length) outreachMapInstance.fitBounds(bounds, {padding:[40,40]});
+      return;
+    }
+    const name = geocodeQueue.shift();
+    const address = (clientExtra[name]||{}).address;
+    const tag = getClientTag(name);
+    const color = tagColors[tag] || '#7a9e7e';
+    geocodeAddress(address, (lat, lng) => {
+      if (lat && lng) {
+        const marker = createColorMarker(lat, lng, color, name, tag);
+        marker.addTo(outreachMapInstance);
+        marker.bindPopup(buildPopupHTML(name, tag, address));
+        outreachMarkers.push(marker);
+        bounds.push([lat, lng]);
+      }
+      setTimeout(geocodeNext, 300);
+    });
+  }
+  geocodeNext();
+}
+
+// ── MAIN MAP ENGINE ───────────────────────────────────────────────────────
+let mainMapInstance = null;
+let mainMapMarkers = [];
+let geocodeCache = {};
+let dailyRouteActive = false;
+let routeLine = null;
+
+// Pin color based on tag — matches user's exact rules
+function pinColor(tag) {
+  if (tag === 'overdue')   return '#e74c3c'; // red  — 6+ months
+  if (tag === 'returning') return '#f0b429'; // yellow — 5 months
+  if (tag === 'scheduled') return '#2980b9'; // blue — has scheduled appt
+  return '#27ae60';                          // green — had appointment / active
+}
+
+function toggleDailyRoute(btn) {
+  dailyRouteActive = !dailyRouteActive;
+  btn.classList.toggle('active', dailyRouteActive);
+  const picker = document.getElementById('daily-picker');
+  picker.style.display = dailyRouteActive ? 'flex' : 'none';
+  if (dailyRouteActive && !document.getElementById('route-date').value) {
+    document.getElementById('route-date').valueAsDate = new Date();
+  }
+  renderMainMap();
+}
+
+function renderMainMap() {
+  // Init map once
+  if (!mainMapInstance) {
+    mainMapInstance = L.map('main-map').setView([26.15, -81.75], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors', maxZoom: 19
+    }).addTo(mainMapInstance);
+  }
+
+  // Clear old markers + route line
+  mainMapMarkers.forEach(m => m.remove());
+  mainMapMarkers = [];
+  if (routeLine) { routeLine.remove(); routeLine = null; }
+
+  // Decide which clients to show
+  let clientsToMap;
+  if (dailyRouteActive) {
+    const dateStr = document.getElementById('route-date').value;
+    if (!dateStr) return;
+    const target = new Date(dateStr + 'T00:00:00');
+    clientsToMap = allClients().filter(name => {
+      return Object.values(clientData(name).pets).some(visits =>
+        visits.some(v => {
+          const d = parseDate(v.date);
+          return d && d.getFullYear()===target.getFullYear() &&
+                 d.getMonth()===target.getMonth() && d.getDate()===target.getDate();
+        })
+      );
+    });
+  } else {
+    clientsToMap = allClients(); // ALL clients
+  }
+
+  // Only those with a saved address
+  const withAddr = clientsToMap.filter(n => (clientExtra[n]||{}).address);
+  const noAddr   = clientsToMap.filter(n => !(clientExtra[n]||{}).address);
+
+  // Update info bar
+  const infoBar = document.getElementById('map-info-bar');
+  if (infoBar) {
+    infoBar.textContent = `Showing ${withAddr.length} client${withAddr.length!==1?'s':''} with addresses${noAddr.length ? ` · ${noAddr.length} missing address (add in their profile)` : ''}${dailyRouteActive?' — Daily Route':''}`;
+  }
+
+  // Build sidebar
+  updateMapSidebar(withAddr);
+
+  // Geocode and place pins
+  let queue = [...withAddr];
+  let bounds = [];
+  let routeCoords = [];
+  let routeIndex = 0;
+
+  function nextPin() {
+    if (!queue.length) {
+      if (bounds.length > 1) mainMapInstance.fitBounds(bounds, {padding:[50,50]});
+      else if (bounds.length === 1) mainMapInstance.setView(bounds[0], 13);
+      // Draw dashed route line for daily view
+      if (dailyRouteActive && routeCoords.length > 1) {
+        routeLine = L.polyline(routeCoords, {color:'#2980b9', weight:3, opacity:0.75, dashArray:'10,7'}).addTo(mainMapInstance);
+      }
+      return;
+    }
+    const name = queue.shift();
+    const address = (clientExtra[name]||{}).address;
+    const tag = getClientTag(name);
+    const color = pinColor(tag);
+    routeIndex++;
+    const idx = dailyRouteActive ? routeIndex : null;
+
+    geocodeAddress(address, (lat, lng) => {
+      if (lat && lng) {
+        const marker = makePin(lat, lng, color, idx);
+        const popup = buildPinPopup(name, tag, address);
+        marker.bindPopup(popup).addTo(mainMapInstance);
+        mainMapMarkers.push(marker);
+        bounds.push([lat, lng]);
+        if (dailyRouteActive) routeCoords.push([lat, lng]);
+      }
+      setTimeout(nextPin, 280); // Nominatim rate limit
+    });
+  }
+  nextPin();
+}
+
+function updateMapSidebar(clients) {
+  const title = document.getElementById('map-sidebar-title');
+  const list  = document.getElementById('map-sidebar-list');
+  title.textContent = dailyRouteActive
+    ? `Daily Route (${clients.length})`
+    : `All Clients (${clients.length})`;
+
+  if (!clients.length) {
+    list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px 0;font-size:13px">No clients with<br>addresses to show</div>';
+    return;
+  }
+
+  // Sort: overdue first, then returning, scheduled, active
+  const order = {overdue:0, returning:1, scheduled:2, active:3, new:4};
+  const sorted = [...clients].sort((a,b) => (order[getClientTag(a)]||5) - (order[getClientTag(b)]||5));
+
+  list.innerHTML = sorted.map((name, i) => {
+    const tag  = getClientTag(name);
+    const ex   = clientExtra[name] || {};
+    const pets = Object.keys(clientData(name).pets);
+    const color = pinColor(tag);
+    return `<div style="padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="openProfile('${name.replace(/'/g,"\\'")}')">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:2px">
+        <div style="width:11px;height:11px;border-radius:50%;background:${color};flex-shrink:0;border:1.5px solid white;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+        ${dailyRouteActive ? `<span style="background:#2980b9;color:white;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px">${i+1}</span>` : ''}
+        <span style="font-weight:600;font-size:13px;color:var(--navy)">${name}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);padding-left:18px">${pets.join(', ')}</div>
+      ${ex.address ? `<div style="font-size:10px;color:var(--muted);padding-left:18px;margin-top:1px">📍 ${ex.address}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// Geocoding — OpenStreetMap Nominatim, no API key
+function geocodeAddress(address, callback) {
+  if (!address) { callback(null,null); return; }
+  if (geocodeCache[address]) { callback(geocodeCache[address].lat, geocodeCache[address].lng); return; }
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`, {
+    headers: {'Accept-Language':'en'}
+  })
+  .then(r=>r.json())
+  .then(data => {
+    if (data && data[0]) {
+      const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+      geocodeCache[address] = {lat, lng};
+      callback(lat, lng);
+    } else callback(null, null);
+  })
+  .catch(() => callback(null, null));
+}
+
+// Make a colored circle pin, optionally numbered for daily route
+function makePin(lat, lng, color, num=null) {
+  const size = 30;
+  const inner = num
+    ? `<span style="color:white;font-size:11px;font-weight:700;line-height:1">${num}</span>`
+    : `<span style="font-size:15px;line-height:1">🐾</span>`;
+  const html = `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center">${inner}</div>`;
+  return L.marker([lat,lng], {
+    icon: L.divIcon({html, className:'', iconSize:[size,size], iconAnchor:[size/2,size/2], popupAnchor:[0,-size/2]})
+  });
+}
+
+function buildPinPopup(name, tag, address) {
+  const ex   = clientExtra[name] || {};
+  const pets = Object.keys(clientData(name).pets).join(', ');
+  const last = lastVisitDate(name);
+  const color = pinColor(tag);
+  const labels = {overdue:'🔴 Overdue', returning:'🟡 Returning (5 mo)', scheduled:'🔵 Scheduled', active:'🟢 Active', new:'🟢 New'};
+  return `<div style="font-family:'DM Sans',sans-serif;min-width:190px;padding:2px 0">
+    <div style="font-weight:700;font-size:14px;color:#1e2d3d;margin-bottom:5px">${name}</div>
+    <div style="display:inline-block;padding:2px 9px;border-radius:12px;background:${color}22;color:${color};font-size:11px;font-weight:700;margin-bottom:6px;border:1px solid ${color}44">${labels[tag]||tag}</div>
+    ${pets ? `<div style="font-size:12px;color:#555;margin-bottom:3px">🐾 ${pets}</div>` : ''}
+    ${last ? `<div style="font-size:12px;color:#555;margin-bottom:3px">📅 Last: ${fmtDate(last.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}))}</div>` : ''}
+    ${ex.phone ? `<div style="font-size:12px;color:#555;margin-bottom:6px">📞 ${ex.phone}</div>` : ''}
+    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}" target="_blank"
+      style="display:inline-block;background:#1e2d3d;color:white;padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;text-decoration:none">Directions ↗</a>
+  </div>`;
+}
+
+function openRouteInMaps() {
+  const dateStr = document.getElementById('route-date').value;
+  if (!dateStr) return;
+  const target = new Date(dateStr + 'T00:00:00');
+  const addrs = allClients()
+    .filter(name => {
+      return Object.values(clientData(name).pets).some(visits =>
+        visits.some(v => {
+          const d = parseDate(v.date);
+          return d && d.getFullYear()===target.getFullYear() &&
+                 d.getMonth()===target.getMonth() && d.getDate()===target.getDate();
+        })
+      );
+    })
+    .filter(n => (clientExtra[n]||{}).address)
+    .map(n => encodeURIComponent((clientExtra[n]).address));
+
+  if (!addrs.length) { showToast('No clients with addresses on this date'); return; }
+  window.open('https://www.google.com/maps/dir/' + addrs.join('/'), '_blank');
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  const titles = {clients:'Clients',outreach:'Outreach',scheduled:'Scheduled',map:'Map',calendar:'Calendar',dashboard:'Dashboard'};
+  document.getElementById('page-title').textContent = titles[id] || id;
+  if (id==='dashboard') buildDashboard();
+  if (id==='calendar') renderCalendar();
+  if (id==='outreach') buildOutreach();
+  if (id==='scheduled') buildScheduled();
+  if (id==='map') { renderMainMap(); setTimeout(()=>{ if(mainMapInstance) mainMapInstance.invalidateSize(); },200); }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+const SEED_DATA = {
+  'Litsa Adamov':        { address:'4321 Coral Way, Naples, FL 34116',              lat:26.1420, lng:-81.7488 },
+  'Felipe Costa':        { address:'7890 Immokalee Rd, Naples, FL 34119',           lat:26.2631, lng:-81.7312 },
+  'Rosa Garcia':         { address:'1250 Pine Ridge Rd, Naples, FL 34108',          lat:26.2084, lng:-81.7764 },
+  'Amy Treff':           { address:'3400 Tamiami Trail N, Naples, FL 34103',        lat:26.1503, lng:-81.7956 },
+  'Cheryl Adams':        { address:'800 Goodlette-Frank Rd, Naples, FL 34102',      lat:26.1412, lng:-81.7895 },
+  'Monica Chan':         { address:'5600 Airport Rd N, Naples, FL 34109',           lat:26.2194, lng:-81.7741 },
+  'Patricia Farrell':    { address:'2600 Golden Gate Pkwy, Naples, FL 34105',       lat:26.1552, lng:-81.7621 },
+  'Anita Perez':         { address:'9100 Collier Blvd, Naples, FL 34114',           lat:26.0881, lng:-81.6734 },
+  'Julio Kranwinkel':    { address:'6300 Davis Blvd, Naples, FL 34104',             lat:26.1330, lng:-81.7502 },
+  'Graciela Londono':    { address:'3200 Santa Barbara Blvd, Naples, FL 34116',     lat:26.1555, lng:-81.7403 },
+  'Matthew Pepe':        { address:'1800 Vanderbilt Beach Rd, Naples, FL 34109',    lat:26.2433, lng:-81.7700 },
+  'Roger Lackhan':       { address:'4500 Radio Rd, Naples, FL 34104',               lat:26.1302, lng:-81.7531 },
+  'Jesus Robles':        { address:'11000 Tamiami Trail E, Naples, FL 34113',       lat:26.0711, lng:-81.6892 },
+  'Melvin Menchita':     { address:'700 Goodlette-Frank Rd N, Naples, FL 34102',    lat:26.1399, lng:-81.7898 },
+  'Kari Chachkes':       { address:'2100 Pine Ridge Rd, Naples, FL 34109',          lat:26.2081, lng:-81.7683 },
+  'Terry Barbarini':     { address:'5200 Rattlesnake Hammock Rd, Naples, FL 34113', lat:26.0992, lng:-81.7015 },
+  'Karen Gonzalez':      { address:'8600 Collier Blvd, Naples, FL 34114',           lat:26.0943, lng:-81.6745 },
+  'Tara Schultz Santos': { address:'1600 Airport Rd S, Naples, FL 34104',           lat:26.1225, lng:-81.7742 },
+  'Shannon Burdick':     { address:'6700 Collier Blvd, Naples, FL 34114',           lat:26.1101, lng:-81.6738 },
+  'Katherine Curran':    { address:'3900 Tamiami Trail E, Naples, FL 34112',        lat:26.1088, lng:-81.7600 },
+  'Alice Sowin':         { address:'890 Vanderbilt Beach Rd, Naples, FL 34108',     lat:26.2430, lng:-81.8012 },
+  'Stefano Romero':      { address:'14100 Tamiami Trail E, Naples, FL 34114',       lat:26.0421, lng:-81.6201 },
+  'Luiz Lopes':          { address:'4000 Golden Gate Pkwy, Naples, FL 34116',       lat:26.1553, lng:-81.7390 },
+  'Gloria Ford':         { address:'2800 Airport Rd N, Naples, FL 34105',           lat:26.1688, lng:-81.7744 },
+  'Leslie Hernandez':    { address:'500 US-41 N, Naples, FL 34108',                 lat:26.1920, lng:-81.8003 },
+  'George Wood':         { address:'10800 Tamiami Trail N, Naples, FL 34108',       lat:26.2722, lng:-81.8015 },
+  'Doreen Dreifus':      { address:'7600 Davis Blvd, Naples, FL 34104',             lat:26.1332, lng:-81.7441 },
+  'Sugey Biaz':          { address:'1200 Collier Blvd, Naples, FL 34116',           lat:26.1621, lng:-81.6722 },
+  'Madeline Rodriguez':  { address:'3100 Pine Ridge Rd, Naples, FL 34109',          lat:26.2082, lng:-81.7641 },
+  'Shanta Ramkeesoon':   { address:'2200 Immokalee Rd, Naples, FL 34110',           lat:26.2751, lng:-81.8021 },
+  'Jennifer Fernanda':   { address:'6100 Pine Ridge Rd, Naples, FL 34119',          lat:26.2088, lng:-81.7201 },
+  'John Derco':          { address:'4800 Tamiami Trail N, Naples, FL 34103',        lat:26.1701, lng:-81.7959 },
+  'Lucille Mascolo':     { address:'900 Central Ave, Naples, FL 34102',             lat:26.1401, lng:-81.7981 },
+  'Pauline':             { address:'3600 Kraft Rd, Naples, FL 34105',               lat:26.1555, lng:-81.7701 },
+  'Jeniffer':            { address:'5400 Shirley St, Naples, FL 34109',             lat:26.2211, lng:-81.7621 },
+};
+
+// Always pre-load geocode cache from seed data
+Object.entries(SEED_DATA).forEach(([name, {address, lat, lng}]) => {
+  geocodeCache[address] = { lat, lng };
+});
+
+async function init() {
+  await loadExtra();
+
+  // Seed placeholder addresses only if client has no address in DB yet
+  Object.entries(SEED_DATA).forEach(([name, {address, lat, lng}]) => {
+    if (!clientExtra[name]) clientExtra[name] = {};
+    if (!clientExtra[name].address) {
+      clientExtra[name].address = address;
+      clientExtra[name].lat = lat;
+      clientExtra[name].lng = lng;
+    }
+  });
+
+  computeStats();
+  renderClients();
+  buildOutreach();
+  buildScheduled();
+}
+
+init();
+</script>
+</body>
+</html>
