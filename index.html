@@ -554,7 +554,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.28</div>
+      <div class="sidebar-version">Magic Touch v3.29</div>
     </div>
   </aside>
 
@@ -1856,7 +1856,7 @@ function renderClients() {
         <td><span class="tag ${tagClass(tag)}">${tagLabel(tag)}</span></td>
         <td>${lastD?fmtDate(lastD.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})):'—'}</td>
         <td>${fmtMoney(cd.total_spent)}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openProfile('${name.replace(/'/g,"\\'")}')">View</button></td>
+        <td><button class="btn-row" onclick="event.stopPropagation();openProfile('${name.replace(/'/g,"\\'")}')">→</button></td>
       </tr>`;
     }).join('');
   }
@@ -1900,7 +1900,7 @@ function buildOutreach() {
         ${ex.phone ? `<div style="font-size:12px;color:var(--sage-dark);margin-top:2px">📞 ${ex.phone}</div>` : ''}
         ${ex.address ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">📍 ${ex.address}</div>` : ''}
       </div>
-      <button class="btn btn-sm btn-outline" onclick="openProfile('${name.replace(/'/g,"\\'")}')">Profile</button>
+      <button class="btn-row" onclick="openProfile('${name.replace(/'/g,"\\'")}')"> →</button>
       <button class="btn btn-sm btn-primary" onclick="copyClientReminder('${name.replace(/'/g,"\\'")}')">📋 Copy Message</button>
     </div>`;
   }).join('');
@@ -1935,7 +1935,7 @@ function buildScheduled() {
         ${ex.address?`<div style="font-size:12px;color:var(--muted);margin-top:2px">📍 ${ex.address}</div>`:''}
       </div>
       <span class="tag tag-scheduled">🟡 Scheduled</span>
-      <button class="btn btn-sm btn-outline" onclick="openProfile('${name.replace(/'/g,"\\'")}')">View Profile</button>
+      <button class="btn-row" onclick="openProfile('${name.replace(/'/g,"\\'")}')"> →</button>
     </div>`;
   }).join('');
 }
@@ -2728,7 +2728,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.28</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.29</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
