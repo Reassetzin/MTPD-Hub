@@ -230,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v3.15</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.16</div>
 </nav>
 
 <!-- MAIN -->
@@ -839,6 +839,14 @@ function parseDate(d) {
 }
 function fmtDate(d) { const dt = parseDate(d); if (!dt) return d||'—'; return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function fmtShort(d) { const dt = parseDate(d); if (!dt) return '—'; return dt.toLocaleDateString('en-US',{month:'short',year:'numeric'}); }
+// Returns all pet names for a client — merges BASE_APPTS and petExtras from DB
+function getAllPets(name) {
+  const fromAppts = Object.keys(clientData(name).pets || {});
+  const fromExtras = Object.keys((clientExtra[name]?.petExtras) || {});
+  const all = new Set([...fromAppts, ...fromExtras]);
+  return [...all].filter(p => p && p.trim());
+}
+
 function allClients() {
   const base = Object.keys(BASE_APPTS);
   const extras = Object.keys(clientExtra).filter(k=>!base.includes(k));
@@ -871,7 +879,7 @@ function computeStats() {
   names.forEach(n => {
     const cd = clientData(n);
     totalRev += cd.total_spent;
-    totalPets += Object.keys(cd.pets).length;
+    totalPets += getAllPets(n).length;
     totalVisits += cd.visits;
   });
   document.getElementById('s-clients').textContent = names.length;
@@ -942,7 +950,7 @@ function openProfile(name) {
   openClientName = name;
   const cd = clientData(name);
   const ex = clientExtra[name] || {};
-  const pets = Object.keys(cd.pets);
+  const pets = getAllPets(name);
   const lastD = lastVisitDate(name);
 
   document.getElementById('p-avatar').textContent = initials(name);
@@ -969,7 +977,10 @@ function openProfile(name) {
 
 function renderPetCards(name, cd, ex) {
   const petExtras = ex.petExtras || {};
-  const html = Object.entries(cd.pets).map(([petName, visits]) => {
+  // Merge pets from appointments AND from petExtras (DB pets with no appts yet)
+  const allPetNames = new Set([...Object.keys(cd.pets), ...Object.keys(petExtras)]);
+  const html = [...allPetNames].filter(p => p && p.trim()).map(petName => {
+    const visits = cd.pets[petName] || [];
     const pe = petExtras[petName] || {};
     const completedVisits = visits.filter(v=>v.status==='Completed');
     const lastPetVisit = completedVisits.length ? completedVisits[completedVisits.length-1].date : null;
@@ -1439,7 +1450,7 @@ function renderClients() {
           <span class="tag ${tagClass(tag)}">${tagLabel(tag)}</span>
         </div>
         <div class="client-card-body">
-          <div class="pet-chips">${pets.map(p=>`<span class="pet-chip">${(clientExtra[name]?.petExtras?.[p]?.species==='cat'?'🐈':'🐾')} ${p}</span>`).join('')}</div>
+          <div class="pet-chips">${getAllPets(name).map(p=>`<span class="pet-chip">${(clientExtra[name]?.petExtras?.[p]?.species==='cat'?'🐈':'🐾')} ${p}</span>`).join('')}</div>
           <div class="contact-line"><span class="ico">📞</span>${ex.phone?`<span>${ex.phone}</span>`:'<span class="contact-missing">No phone</span>'}</div>
           <div class="contact-line"><span class="ico">📍</span>${ex.address?`<span>${ex.address}</span>`:'<span class="contact-missing">No address</span>'}</div>
         </div>
@@ -1460,7 +1471,7 @@ function renderClients() {
       const tag = getClientTag(name);
       return `<tr style="cursor:pointer" onclick="openProfile('${name.replace(/'/g,"\\'")}')">
         <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="width:32px;height:32px;font-size:11px;flex-shrink:0">${initials(name)}</div><div><div style="font-weight:600">${name}</div><div style="font-size:11px;color:var(--muted)">${ex.phone||'—'}</div></div></div></td>
-        <td>${pets.join(', ')||'—'}</td>
+        <td>${getAllPets(name).join(', ')||'—'}</td>
         <td>${ex.phone||'—'}</td>
         <td><span class="tag ${tagClass(tag)}">${tagLabel(tag)}</span></td>
         <td>${lastD?fmtDate(lastD.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})):'—'}</td>
@@ -2074,7 +2085,7 @@ function openApptModal(clientNameOverride) {
 
   const petSel = document.getElementById('appt-pet');
   petSel.disabled = false;
-  const pets = Object.keys(clientData(name).pets);
+  const pets = getAllPets(name);
   petSel.innerHTML = '<option value="">— Select pet —</option>' +
     pets.map(p => `<option value="${p}">${p}</option>`).join('');
   if (pets.length === 1) { petSel.value = pets[0]; updateApptPrice(); }
@@ -2337,7 +2348,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.15</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.16</div>
 
 </body>
 </html>
