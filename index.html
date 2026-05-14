@@ -230,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v3.11</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.12</div>
 </nav>
 
 <!-- MAIN -->
@@ -690,21 +690,63 @@ async function saveExtra(name) {
   const ex = clientExtra[name];
   if (!ex) return;
   if (!dbReady) { showToast('⚠️ Not connected to database'); return; }
-  // Upsert client row
-  await sb.post('crm_clients', {
-    name, phone: ex.phone||null, email: ex.email||null, address: ex.address||null,
-    contact_pref: ex.contactPref||null, referral: ex.referral||null,
-    notes: ex.notes||null, lat: ex.lat||null, lng: ex.lng||null
-  });
+
+  // Upsert client row with explicit on-conflict target
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/crm_clients`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=representation',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        name,
+        phone: ex.phone||null, email: ex.email||null, address: ex.address||null,
+        contact_pref: ex.contactPref||null, referral: ex.referral||null,
+        notes: ex.notes||null, lat: ex.lat||null, lng: ex.lng||null
+      })
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('Save client error:', res.status, err);
+      showToast('⚠️ Save failed: ' + res.status);
+      return;
+    }
+    console.log('Client saved:', name);
+  } catch(e) {
+    console.error('Save client exception:', e);
+    showToast('⚠️ Save failed — check connection');
+    return;
+  }
+
   // Upsert pet rows
   if (ex.petExtras) {
     for (const [petName, pe] of Object.entries(ex.petExtras)) {
-      await sb.post('crm_pets', {
-        client_name: name, pet_name: petName,
-        species: pe.species||'dog', gender: pe.gender||null,
-        breed: pe.breed||null, dob: pe.dob||null,
-        weightlbs: pe.weightlbs||null, dental: pe.dental||null, medical: pe.medical||null
-      });
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/crm_pets`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates,return=representation',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            client_name: name, pet_name: petName,
+            species: pe.species||'dog', gender: pe.gender||null,
+            breed: pe.breed||null, dob: pe.dob||null,
+            weightlbs: pe.weightlbs||null, dental: pe.dental||null, medical: pe.medical||null
+          })
+        });
+        if (!res.ok) {
+          const err = await res.text();
+          console.error('Save pet error:', res.status, err);
+        }
+      } catch(e) { console.error('Save pet exception:', e); }
     }
   }
 }
@@ -2239,7 +2281,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.11</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.12</div>
 
 </body>
 </html>
