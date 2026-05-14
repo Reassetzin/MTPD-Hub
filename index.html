@@ -220,6 +220,16 @@ body.dark .vbtn.active { background:#e8e4de; color:#111111; }
 .btn-ghost:hover { background:var(--bg); border-color:var(--border2); }
 .btn-danger { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:var(--r2); border:1px solid var(--red-border); background:var(--red-bg); color:var(--red); font-family:'Inter',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .12s; }
 .btn-sm { padding:5px 10px; font-size:12px; }
+.row-btn {
+  padding:4px 10px; border-radius:6px;
+  border:1px solid var(--border); background:transparent;
+  font-family:'Inter',sans-serif; font-size:11px; font-weight:600;
+  color:var(--ink3); cursor:pointer; transition:all .12s;
+  white-space:nowrap;
+}
+.row-btn:hover { background:var(--bg); color:var(--ink); border-color:var(--border2); }
+body.dark .row-btn { color:#888; border-color:#3a3a40; }
+body.dark .row-btn:hover { background:#2a2a2e; color:#ccc; }
 
 /* ══ CONTENT ══════════════════════════════════════ */
 .content { padding:20px; flex:1; }
@@ -495,8 +505,8 @@ body.dark .vbtn.active { background:#e8e4de; color:#111111; }
 <!-- LOADING SCREEN -->
 <div id="loading-screen" style="position:fixed;inset:0;background:#fdfaf6;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:12px;">
   <div style="font-size:36px">🐾</div>
-  <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:#1a1612">Magic Touch</div>
-  <div style="font-size:13px;color:#8a7d70" id="loading-msg">Connecting…</div>
+  <div style="font-family:'Inter',sans-serif;font-size:20px;font-weight:700;color:#1a1612;letter-spacing:-.3px">Magic Touch Pet Dental</div>
+  <div style="font-size:12px;color:#8a7d70;letter-spacing:.5px;text-transform:uppercase;font-weight:500" id="loading-msg">Loading…</div>
   <div style="width:160px;height:2px;background:#f0ede8;border-radius:2px;margin-top:8px;overflow:hidden">
     <div id="loading-bar" style="height:100%;background:#3d7a52;width:0%;transition:width 2s ease;border-radius:2px"></div>
   </div>
@@ -550,7 +560,7 @@ body.dark .vbtn.active { background:#e8e4de; color:#111111; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.27</div>
+      <div class="sidebar-version">Magic Touch v3.28</div>
     </div>
   </aside>
 
@@ -1551,7 +1561,7 @@ function copyReminderForProfile() {
   const cd = clientData(openClientName);
   const ex = clientExtra[openClientName] || {};
   const pets = Object.keys(cd.pets).join(' & ');
-  const msg = `Hi ${first}! 🐾 It's time for ${pets}'s next non-anesthetic dental cleaning. Would you like to schedule an appointment? Reply or call us anytime! — Paw & Smile Pet Dental`;
+  const msg = `Hi ${first}! 🐾 It's time for ${pets}'s next non-anesthetic dental cleaning. Would you like to schedule an appointment? Reply or call us anytime! — Magic Touch Pet Dental`;
   navigator.clipboard.writeText(msg).then(()=>showToast('📋 Reminder copied!'));
 }
 
@@ -1852,7 +1862,7 @@ function renderClients() {
         <td><span class="tag ${tagClass(tag)}">${tagLabel(tag)}</span></td>
         <td>${lastD?fmtDate(lastD.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})):'—'}</td>
         <td>${fmtMoney(cd.total_spent)}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openProfile('${name.replace(/'/g,"\\'")}')">View</button></td>
+        <td><button class="row-btn" onclick="event.stopPropagation();openProfile('${name.replace(/'/g,\"\\'\")}')" >Open →</button></td>
       </tr>`;
     }).join('');
   }
@@ -1931,7 +1941,7 @@ function buildScheduled() {
         ${ex.address?`<div style="font-size:12px;color:var(--muted);margin-top:2px">📍 ${ex.address}</div>`:''}
       </div>
       <span class="tag tag-scheduled">🟡 Scheduled</span>
-      <button class="btn btn-sm btn-outline" onclick="openProfile('${name.replace(/'/g,"\\'")}')">View Profile</button>
+      <button class="row-btn" onclick="openProfile('${name.replace(/'/g,"\\'")}')">Open →</button>
     </div>`;
   }).join('');
 }
@@ -2070,7 +2080,7 @@ function buildReminders() {
 function copyClientReminder(name) {
   const first = name.split(' ')[0];
   const pets = Object.keys(clientData(name).pets).join(' & ') || 'your pet';
-  const msg = `Hi ${first}! 🐾 It's been a while since ${pets}'s last non-anesthetic dental cleaning. Ready to book? Reply to this message or call/text us! — Paw & Smile Pet Dental`;
+  const msg = `Hi ${first}! 🐾 It's been a while since ${pets}'s last non-anesthetic dental cleaning. Ready to book? Reply to this message or call/text us! — Magic Touch Pet Dental`;
   navigator.clipboard.writeText(msg).then(()=>showToast('📋 Message copied!'));
 }
 
@@ -2724,7 +2734,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.27</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.28</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
