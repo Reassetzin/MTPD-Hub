@@ -220,6 +220,10 @@ body.dark .vbtn.active { background:#e8e4de; color:#111111; }
 .btn-ghost:hover { background:var(--bg); border-color:var(--border2); }
 .btn-danger { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:var(--r2); border:1px solid var(--red-border); background:var(--red-bg); color:var(--red); font-family:'Inter',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .12s; }
 .btn-sm { padding:5px 10px; font-size:12px; }
+.btn-row { padding:4px 12px; border-radius:6px; border:none; background:transparent; font-family:'Inter',sans-serif; font-size:12px; font-weight:500; color:var(--ink3); cursor:pointer; transition:all .12s; white-space:nowrap; }
+.btn-row:hover { background:var(--bg); color:var(--ink); }
+body.dark .btn-row { color:#888; }
+body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
 
 /* ══ CONTENT ══════════════════════════════════════ */
 .content { padding:20px; flex:1; }
@@ -550,7 +554,7 @@ body.dark .vbtn.active { background:#e8e4de; color:#111111; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.27</div>
+      <div class="sidebar-version">Magic Touch v3.28</div>
     </div>
   </aside>
 
@@ -2724,7 +2728,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.27</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.28</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
