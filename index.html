@@ -503,15 +503,6 @@ body.dark .row-btn:hover { background:#2a2a2e; color:#ccc; }
 <body>
 
 <!-- LOADING SCREEN -->
-<div id="loading-screen" style="position:fixed;inset:0;background:#fdfaf6;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:12px;">
-  <div style="font-size:36px">🐾</div>
-  <div style="font-family:'Inter',sans-serif;font-size:20px;font-weight:700;color:#1a1612;letter-spacing:-.3px">Magic Touch Pet Dental</div>
-  <div style="font-size:12px;color:#8a7d70;letter-spacing:.5px;text-transform:uppercase;font-weight:500" id="loading-msg">Loading…</div>
-  <div style="width:160px;height:2px;background:#f0ede8;border-radius:2px;margin-top:8px;overflow:hidden">
-    <div id="loading-bar" style="height:100%;background:#3d7a52;width:0%;transition:width 2s ease;border-radius:2px"></div>
-  </div>
-</div>
-
 <!-- APP SHELL -->
 <div id="app" style="display:flex;width:100%;min-height:100vh;">
 
@@ -560,7 +551,7 @@ body.dark .row-btn:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.31</div>
+      <div class="sidebar-version">Magic Touch v3.32</div>
     </div>
   </aside>
 
@@ -1183,21 +1174,32 @@ async function saveAppointment(clientName, petName, date, price, status) {
 
 // ── LOADING SCREEN ────────────────────────────────────────────────────────
 function showLoading(show) {
-  const el = document.getElementById('loading-screen');
-  if (!el) return;
+  let el = document.getElementById('loading-screen');
   if (show) {
-    el.style.display = 'flex';
-    el.style.opacity = '1';
-    const b = document.getElementById('loading-bar');
-    if (b) setTimeout(() => { b.style.width = '85%'; }, 80);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'loading-screen';
+      el.style.cssText = 'position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px;';
+      el.innerHTML = `
+        <div style="font-size:40px">🐾</div>
+        <div style="font-family:'Inter',sans-serif;font-size:19px;font-weight:700;color:var(--ink);letter-spacing:-.3px">Magic Touch Pet Dental</div>
+        <div style="font-size:11px;color:var(--ink4);letter-spacing:1.5px;text-transform:uppercase;font-weight:600">Loading…</div>
+        <div style="width:160px;height:2px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:4px">
+          <div id="loading-bar" style="height:100%;background:var(--green);width:0%;transition:width 1.8s ease;border-radius:2px"></div>
+        </div>`;
+      document.body.appendChild(el);
+      setTimeout(() => { const b = document.getElementById('loading-bar'); if (b) b.style.width = '80%'; }, 60);
+    }
   } else {
-    const b = document.getElementById('loading-bar');
-    if (b) b.style.width = '100%';
-    setTimeout(() => {
-      el.style.transition = 'opacity 0.35s';
-      el.style.opacity = '0';
-      setTimeout(() => { el.style.display = 'none'; }, 380);
-    }, 200);
+    if (el) {
+      const b = document.getElementById('loading-bar');
+      if (b) b.style.width = '100%';
+      setTimeout(() => {
+        el.style.transition = 'opacity 0.3s';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 320);
+      }, 150);
+    }
   }
 }
 
@@ -2740,7 +2742,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.31</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.32</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
