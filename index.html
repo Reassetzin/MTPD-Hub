@@ -560,7 +560,7 @@ body.dark .row-btn:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.29</div>
+      <div class="sidebar-version">Magic Touch v3.30</div>
     </div>
   </aside>
 
@@ -1182,25 +1182,22 @@ async function saveAppointment(clientName, petName, date, price, status) {
 
 // ── LOADING SCREEN ────────────────────────────────────────────────────────
 function showLoading(show) {
-  let el = document.getElementById('loading-screen');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'loading-screen';
-    el.style.cssText = 'position:fixed;inset:0;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;';
-    el.innerHTML = `<div style="font-size:48px">🐾</div>
-      <div style="font-family:\'Playfair Display\',serif;font-size:24px;color:white">Paw & Smile CRM</div>
-      <div style="color:rgba(255,255,255,0.5);font-size:14px" id="loading-msg">Connecting to database…</div>
-      <div style="width:200px;height:3px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;margin-top:8px">
-        <div id="loading-bar" style="height:100%;background:var(--sage);width:0%;transition:width 2s ease;border-radius:2px"></div>
-      </div>`;
-    document.body.appendChild(el);
-    setTimeout(() => { const b = document.getElementById('loading-bar'); if(b) b.style.width='90%'; }, 50);
+  const el = document.getElementById('loading-screen');
+  if (!el) return;
+  if (show) {
+    el.style.display = 'flex';
+    el.style.opacity = '1';
+    const b = document.getElementById('loading-bar');
+    if (b) setTimeout(() => { b.style.width = '85%'; }, 80);
+  } else {
+    const b = document.getElementById('loading-bar');
+    if (b) b.style.width = '100%';
+    setTimeout(() => {
+      el.style.transition = 'opacity 0.35s';
+      el.style.opacity = '0';
+      setTimeout(() => { el.style.display = 'none'; }, 380);
+    }, 200);
   }
-  if (!show) {
-    const b = document.getElementById('loading-bar'); if(b) b.style.width='100%';
-    setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity 0.4s'; setTimeout(()=>el.remove(),400); }, 300);
-  }
-  el.style.display = show ? 'flex' : 'none';
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────
@@ -2734,7 +2731,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.29</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.30</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
