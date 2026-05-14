@@ -230,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v3.13</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.14</div>
 </nav>
 
 <!-- MAIN -->
@@ -1728,6 +1728,20 @@ function setOutreachView(v, btn) {
 }
 
 function renderOutreachMap() {
+  const container = document.getElementById('outreach-map');
+  if (!container) return;
+
+  // Destroy and recreate so dimensions are correct
+  if (outreachMapInstance) { try { outreachMapInstance.remove(); } catch(e){} outreachMapInstance = null; }
+  outreachMarkers = [];
+  container.innerHTML = '';
+
+  outreachMapInstance = L.map(container).setView([26.2, -81.8], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  }).addTo(outreachMapInstance);
+  setTimeout(() => { if (outreachMapInstance) outreachMapInstance.invalidateSize(); }, 200);
+
   const names = allClients().filter(n => {
     const tag = getClientTag(n);
     if (outreachFilter === 'overdue') return tag === 'overdue';
@@ -1735,41 +1749,29 @@ function renderOutreachMap() {
     return tag === 'overdue' || tag === 'returning';
   }).filter(n => (clientExtra[n]||{}).address);
 
-  if (!outreachMapInstance) {
-    outreachMapInstance = L.map('outreach-map').setView([26.2, -81.8], 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors', maxZoom: 19
-    }).addTo(outreachMapInstance);
-  } else {
-    outreachMarkers.forEach(m => m.remove());
-    outreachMarkers = [];
-  }
+  const mapRef = outreachMapInstance;
+  let queue = [...names], bounds = [];
 
-  const tagColors = { overdue: '#c0392b', returning: '#c4952a' };
-  let geocodeQueue = names.slice();
-  let bounds = [];
-
-  function geocodeNext() {
-    if (!geocodeQueue.length) {
-      if (bounds.length) outreachMapInstance.fitBounds(bounds, {padding:[40,40]});
+  function next() {
+    if (!queue.length) {
+      if (bounds.length > 1) mapRef.fitBounds(bounds, {padding:[40,40]});
+      else if (bounds.length === 1) mapRef.setView(bounds[0], 13);
       return;
     }
-    const name = geocodeQueue.shift();
+    const name = queue.shift();
     const address = (clientExtra[name]||{}).address;
     const tag = getClientTag(name);
-    const color = tagColors[tag] || '#7a9e7e';
     geocodeAddress(address, (lat, lng) => {
-      if (lat && lng) {
-        const marker = createColorMarker(lat, lng, color, name, tag);
-        marker.addTo(outreachMapInstance);
-        marker.bindPopup(buildPopupHTML(name, tag, address));
+      if (lat && lng && mapRef) {
+        const marker = makePin(lat, lng, pinColor(tag));
+        marker.bindPopup(buildPinPopup(name, tag, address)).addTo(mapRef);
         outreachMarkers.push(marker);
         bounds.push([lat, lng]);
       }
-      setTimeout(geocodeNext, 300);
+      setTimeout(next, 50);
     });
   }
-  geocodeNext();
+  next();
 }
 
 // ── MAIN MAP ENGINE ───────────────────────────────────────────────────────
@@ -2302,7 +2304,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.13</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.14</div>
 
 </body>
 </html>
