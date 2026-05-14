@@ -153,6 +153,22 @@ body.dark .cal-day.other-month { background:var(--bg); }
 body.dark .cal-day.today { background:#0f2e1a; }
 body.dark .week-cell { background:#1f1f22; }
 body.dark .client-card-footer { background:#18181b; }
+/* Dark mode — muted colors for all colored elements */
+body.dark .pet-chip { background:#1c2e22; color:#6abf82; border-color:#1c2e22; }
+body.dark .tag-overdue   { background:#2e1c1c; color:#e07070; border-color:#2e1c1c; }
+body.dark .tag-returning { background:#2e2616; color:#c09040; border-color:#2e2616; }
+body.dark .tag-active    { background:#1c2e22; color:#6abf82; border-color:#1c2e22; }
+body.dark .tag-new       { background:#1a2236; color:#6090d0; border-color:#1a2236; }
+body.dark .tag-scheduled { background:#2e2616; color:#c09040; border-color:#2e2616; }
+body.dark .badge-completed { background:#1c2e22; color:#6abf82; border-color:#1c2e22; }
+body.dark .badge-scheduled { background:#2e2616; color:#c09040; border-color:#2e2616; }
+body.dark .badge-cancelled { background:#2e1c1c; color:#e07070; border-color:#2e1c1c; }
+body.dark .fpill { background:#2a2a2e; color:#a0a09a; border-color:#3a3a40; }
+body.dark .fpill.active { background:#e8e4de; color:#111111; border-color:#e8e4de; }
+body.dark .fpill:hover:not(.active) { background:#333338; color:#d0ccc6; }
+body.dark .sort-select { background:#2a2a2e; color:#a0a09a; border-color:#3a3a40; }
+body.dark .vbtn { background:#2a2a2e; color:#a0a09a; border-color:#3a3a40; }
+body.dark .vbtn.active { background:#e8e4de; color:#111111; }
 .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.25); z-index:99; }
 
 /* ══ MAIN WRAP ════════════════════════════════════ */
@@ -227,7 +243,7 @@ body.dark .client-card-footer { background:#18181b; }
   padding:5px 12px; border-radius:20px;
   border:1px solid var(--border); background:var(--white);
   font-family:'Inter',sans-serif; font-size:12px; font-weight:500;
-  color:var(--ink3); cursor:pointer; transition:all .1s; white-space:nowrap;
+  color:var(--ink2); cursor:pointer; transition:all .1s; white-space:nowrap;
 }
 .fpill.active { background:var(--ink); color:#fff; border-color:var(--ink); font-weight:600; }
 .fpill:hover:not(.active) { border-color:var(--border2); color:var(--ink); }
@@ -534,7 +550,7 @@ body.dark .client-card-footer { background:#18181b; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.26</div>
+      <div class="sidebar-version">Magic Touch v3.27</div>
     </div>
   </aside>
 
@@ -2708,7 +2724,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.26</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.27</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
