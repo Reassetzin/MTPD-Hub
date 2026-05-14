@@ -230,7 +230,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
     <div class="nav-item" onclick="showPage('calendar',this)"><span class="ico">📅</span> Calendar</div>
     <div class="nav-item" onclick="showPage('dashboard',this)"><span class="ico">📊</span> Dashboard</div>
   </div>
-  <div class="sidebar-footer">Paw & Smile CRM v3.14</div>
+  <div class="sidebar-footer">Paw & Smile CRM v3.15</div>
 </nav>
 
 <!-- MAIN -->
@@ -267,7 +267,19 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
           <button class="filter-pill active-tag" onclick="setTagFilter('active',this)">🟢 Active</button>
           <button class="filter-pill new-tag" onclick="setTagFilter('new',this)">🔵 New</button>
         </div>
-        <div style="display:flex;gap:6px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="sort-select" onchange="renderClients()"
+            style="padding:7px 12px;border-radius:10px;border:1.5px solid var(--border);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--navy);background:var(--white);cursor:pointer;outline:none;">
+            <option value="alpha">↑ A–Z</option>
+            <option value="alpha-desc">↓ Z–A</option>
+            <option value="last-visit-desc">🕐 Most Recent Visit</option>
+            <option value="last-visit-asc">🕐 Oldest Visit</option>
+            <option value="revenue-desc">💰 Highest Revenue</option>
+            <option value="revenue-asc">💰 Lowest Revenue</option>
+            <option value="visits-desc">📅 Most Visits</option>
+            <option value="pets-desc">🐾 Most Pets</option>
+            <option value="tag">🏷️ By Status</option>
+          </select>
           <button class="view-toggle active" id="vt-grid" onclick="setView('grid',this)" title="Grid view">⊞</button>
           <button class="view-toggle" id="vt-list" onclick="setView('list',this)" title="List view">☰</button>
         </div>
@@ -1367,7 +1379,9 @@ function setTagFilter(f, btn) {
 // ── RENDER CLIENTS ────────────────────────────────────────────────────────
 function renderClients() {
   const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const sort = document.getElementById('sort-select')?.value || 'alpha';
   const names = allClients();
+
   let filtered = names.filter(name => {
     const cd = clientData(name);
     const ex = clientExtra[name] || {};
@@ -1378,6 +1392,25 @@ function renderClients() {
     const tag = getClientTag(name);
     const matchTag = currentTagFilter === 'all' || tag === currentTagFilter;
     return matchSearch && matchTag;
+  });
+
+  // Sort
+  const tagOrder = {overdue:0, returning:1, scheduled:2, active:3, new:4};
+  filtered.sort((a, b) => {
+    const cdA = clientData(a), cdB = clientData(b);
+    const lastA = lastVisitDate(a), lastB = lastVisitDate(b);
+    switch(sort) {
+      case 'alpha':         return a.localeCompare(b);
+      case 'alpha-desc':   return b.localeCompare(a);
+      case 'last-visit-desc': return (lastB||0) - (lastA||0);
+      case 'last-visit-asc':  return (lastA||new Date(0)) - (lastB||new Date(0));
+      case 'revenue-desc': return cdB.total_spent - cdA.total_spent;
+      case 'revenue-asc':  return cdA.total_spent - cdB.total_spent;
+      case 'visits-desc':  return cdB.visits - cdA.visits;
+      case 'pets-desc':    return Object.keys(cdB.pets).length - Object.keys(cdA.pets).length;
+      case 'tag':          return (tagOrder[getClientTag(a)]||5) - (tagOrder[getClientTag(b)]||5);
+      default:             return a.localeCompare(b);
+    }
   });
 
   const grid = document.getElementById('client-grid');
@@ -2304,7 +2337,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.14</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.75);color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.15</div>
 
 </body>
 </html>
