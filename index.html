@@ -31,6 +31,10 @@ html { font-size:14px; -webkit-font-smoothing:antialiased; }
   --blue:    #2563eb;
   --blue-bg: #eff6ff;
   --peach:   #e05a40;
+  --green-border: #86efac;
+  --red-border:   #fca5a5;
+  --amber-border: #fcd34d;
+  --blue-border:  #93c5fd;
   --r:       10px;
   --r2:      7px;
   --sidebar: 210px;
@@ -105,6 +109,10 @@ body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink); d
 /* Dark mode */
 body.dark {
   --bg:      #18181b;
+  --green-border: #1a4028;
+  --red-border:   #4a1818;
+  --amber-border: #4a3010;
+  --blue-border:  #102040;
   --white:   #1f1f22;
   --border:  #2e2e32;
   --border2: #3f3f44;
@@ -123,7 +131,9 @@ body.dark .snav.active { background:rgba(255,255,255,.08); }
 body.dark .topbar { background:#1f1f22; }
 body.dark .theme-toggle:hover { background:#2e2e32; }
 body.dark .avatar { background:#2e2e32; }
-body.dark .pet-chip { border-color:#1a4028; }
+body.dark .pet-chip { border-color:var(--green-border); }
+body.dark .btn-primary { background:#e8e4de; color:#111111; }
+body.dark .btn-primary:hover { background:#d8d4ce; color:#111111; }
 body.dark .client-card:hover { box-shadow:0 2px 12px rgba(0,0,0,.3); }
 body.dark .search-box:focus-within { box-shadow:0 0 0 3px rgba(255,255,255,.06); }
 body.dark .field-input { background:var(--bg); color:var(--ink); }
@@ -178,11 +188,11 @@ body.dark .client-card-footer { background:#18181b; }
 .btn-primary {
   display:inline-flex; align-items:center; gap:6px;
   padding:7px 14px; border-radius:var(--r2); border:none;
-  background:var(--ink); color:#fff;
+  background:#111111; color:#ffffff;
   font-family:'Inter',sans-serif; font-size:13px; font-weight:600;
   cursor:pointer; transition:all .12s; white-space:nowrap;
 }
-.btn-primary:hover { background:#333; }
+.btn-primary:hover { background:#333333; color:#ffffff; }
 .btn-ghost {
   display:inline-flex; align-items:center; gap:6px;
   padding:7px 12px; border-radius:var(--r2);
@@ -192,7 +202,7 @@ body.dark .client-card-footer { background:#18181b; }
   transition:all .12s; white-space:nowrap;
 }
 .btn-ghost:hover { background:var(--bg); border-color:var(--border2); }
-.btn-danger { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:var(--r2); border:1px solid #fca5a5; background:var(--red-bg); color:var(--red); font-family:'Inter',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .12s; }
+.btn-danger { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:var(--r2); border:1px solid var(--red-border); background:var(--red-bg); color:var(--red); font-family:'Inter',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .12s; }
 .btn-sm { padding:5px 10px; font-size:12px; }
 
 /* ══ CONTENT ══════════════════════════════════════ */
@@ -258,7 +268,7 @@ body.dark .client-card-footer { background:#18181b; }
 .client-card-meta { font-size:11.5px; color:var(--ink3); margin-top:1px; }
 .client-card-body { padding:0 14px 10px; }
 .pet-chips { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px; }
-.pet-chip { background:var(--green-bg); color:var(--green); font-size:11px; font-weight:600; padding:2px 7px; border-radius:4px; border:1px solid #bbf7d0; }
+.pet-chip { background:var(--green-bg); color:var(--green); font-size:11px; font-weight:600; padding:2px 7px; border-radius:4px; border:1px solid var(--green-border); }
 .client-card-footer { display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--bg); border-top:1px solid var(--border); }
 .client-card-footer span { font-size:11px; color:var(--ink3); }
 .client-card-footer strong { font-weight:600; color:var(--ink2); }
@@ -267,11 +277,11 @@ body.dark .client-card-footer { background:#18181b; }
 
 /* ══ TAGS ══════════════════════════════════════════ */
 .tag { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; white-space:nowrap; }
-.tag-overdue   { background:var(--red-bg);   color:var(--red);   border:1px solid #fca5a5; }
-.tag-returning { background:var(--amber-bg); color:var(--amber); border:1px solid #fcd34d; }
-.tag-active    { background:var(--green-bg); color:var(--green); border:1px solid #86efac; }
-.tag-new       { background:var(--blue-bg);  color:var(--blue);  border:1px solid #93c5fd; }
-.tag-scheduled { background:var(--amber-bg); color:var(--amber); border:1px solid #fcd34d; }
+.tag-overdue   { background:var(--red-bg);   color:var(--red);   border:1px solid var(--red-border); }
+.tag-returning { background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber-border); }
+.tag-active    { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+.tag-new       { background:var(--blue-bg);  color:var(--blue);  border:1px solid var(--blue-border); }
+.tag-scheduled { background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber-border); }
 
 /* ══ DATA TABLE ════════════════════════════════════ */
 .client-table-wrap { background:var(--white); border-radius:var(--r); border:1px solid var(--border); overflow:hidden; }
@@ -365,9 +375,9 @@ body.dark .client-card-footer { background:#18181b; }
 
 /* ══ BADGES ════════════════════════════════════════ */
 .badge { display:inline-block; padding:2px 7px; border-radius:4px; font-size:11px; font-weight:600; }
-.badge-completed { background:var(--green-bg); color:var(--green); border:1px solid #86efac; }
-.badge-scheduled { background:var(--amber-bg); color:var(--amber); border:1px solid #fcd34d; }
-.badge-cancelled { background:var(--red-bg); color:var(--red); border:1px solid #fca5a5; }
+.badge-completed { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+.badge-scheduled { background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber-border); }
+.badge-cancelled { background:var(--red-bg); color:var(--red); border:1px solid var(--red-border); }
 
 /* ══ SPECIES TOGGLE ════════════════════════════════ */
 .species-btn { padding:7px 14px; border-radius:var(--r2); border:1px solid var(--border); background:var(--white); font-family:'Inter',sans-serif; font-size:13px; font-weight:500; color:var(--ink3); cursor:pointer; transition:all .1s; }
@@ -524,7 +534,7 @@ body.dark .client-card-footer { background:#18181b; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.25</div>
+      <div class="sidebar-version">Magic Touch v3.26</div>
     </div>
   </aside>
 
@@ -2698,7 +2708,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.25</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.26</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
