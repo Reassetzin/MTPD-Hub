@@ -77,7 +77,72 @@ body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink); d
 .snav-badge.green { background:var(--green); }
 
 .sidebar-bottom { padding:12px 16px; border-top:1px solid var(--border); }
-.sidebar-version { font-size:10px; color:var(--ink4); }
+.sidebar-version { font-size:10px; color:var(--ink4); margin-top:8px; }
+
+/* Theme toggle */
+.theme-toggle {
+  display:flex; align-items:center; gap:8px;
+  cursor:pointer; padding:7px 8px; border-radius:8px;
+  transition:background .15s; user-select:none;
+}
+.theme-toggle:hover { background:var(--bg); }
+.theme-toggle span:first-child { font-size:14px; flex-shrink:0; }
+#theme-label { font-size:12px; font-weight:500; color:var(--ink2); flex:1; }
+.toggle-track {
+  width:32px; height:18px; border-radius:20px;
+  background:var(--border2); position:relative;
+  transition:background .2s; flex-shrink:0;
+}
+.toggle-track.on { background:var(--ink); }
+.toggle-thumb {
+  position:absolute; top:2px; left:2px;
+  width:14px; height:14px; border-radius:50%;
+  background:#fff; transition:transform .2s;
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.toggle-track.on .toggle-thumb { transform:translateX(14px); }
+
+/* Dark mode */
+body.dark {
+  --bg:      #18181b;
+  --white:   #1f1f22;
+  --border:  #2e2e32;
+  --border2: #3f3f44;
+  --ink:     #f0ede8;
+  --ink2:    #c0bbb4;
+  --ink3:    #8a857e;
+  --ink4:    #5a5650;
+  --green-bg:#0f2e1a;
+  --red-bg:  #2e1010;
+  --amber-bg:#2e2010;
+  --blue-bg: #0f1e2e;
+}
+body.dark .sidebar { background:#111113; border-color:#2e2e32; }
+body.dark .snav:hover { background:rgba(255,255,255,.05); }
+body.dark .snav.active { background:rgba(255,255,255,.08); }
+body.dark .topbar { background:#1f1f22; }
+body.dark .theme-toggle:hover { background:#2e2e32; }
+body.dark .avatar { background:#2e2e32; }
+body.dark .pet-chip { border-color:#1a4028; }
+body.dark .client-card:hover { box-shadow:0 2px 12px rgba(0,0,0,.3); }
+body.dark .search-box:focus-within { box-shadow:0 0 0 3px rgba(255,255,255,.06); }
+body.dark .field-input { background:var(--bg); color:var(--ink); }
+body.dark .form-group input,
+body.dark .form-group select,
+body.dark .form-group textarea { background:var(--bg); color:var(--ink); }
+body.dark .modal { background:#1f1f22; }
+body.dark .profile-panel { background:#18181b; }
+body.dark .pet-card-header { background:#1f1f22; }
+body.dark .pet-card-body { background:var(--bg); }
+body.dark .tl-content { background:#1f1f22; }
+body.dark .card-panel { background:#1f1f22; }
+body.dark .map-sidebar-panel { background:#1f1f22; }
+body.dark .data-table tr:hover td { background:#2a2a2e; }
+body.dark .cal-day { background:#1f1f22; }
+body.dark .cal-day.other-month { background:var(--bg); }
+body.dark .cal-day.today { background:#0f2e1a; }
+body.dark .week-cell { background:#1f1f22; }
+body.dark .client-card-footer { background:#18181b; }
 .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.25); z-index:99; }
 
 /* ══ MAIN WRAP ════════════════════════════════════ */
@@ -452,7 +517,14 @@ body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink); d
       </a>
     </nav>
     <div class="sidebar-bottom">
-      <div class="sidebar-version">Magic Touch v3.24</div>
+      <div class="theme-toggle" onclick="toggleDark()">
+        <span id="theme-icon">🌙</span>
+        <span id="theme-label">Dark mode</span>
+        <div class="toggle-track" id="toggle-track">
+          <div class="toggle-thumb" id="toggle-thumb"></div>
+        </div>
+      </div>
+      <div class="sidebar-version">Magic Touch v3.25</div>
     </div>
   </aside>
 
@@ -2626,7 +2698,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.24</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.25</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -2640,6 +2712,30 @@ function closeSidebar() {
   document.querySelector('.sidebar').classList.remove('open');
   document.getElementById('sidebar-overlay').classList.remove('open');
 }
+function toggleDark() {
+  const dark = document.body.classList.toggle('dark');
+  const track = document.getElementById('toggle-track');
+  const icon  = document.getElementById('theme-icon');
+  const label = document.getElementById('theme-label');
+  track.classList.toggle('on', dark);
+  icon.textContent  = dark ? '☀️' : '🌙';
+  label.textContent = dark ? 'Light mode' : 'Dark mode';
+  localStorage.setItem('mtpd-dark', dark ? '1' : '0');
+}
+// Restore preference on load
+(function() {
+  if (localStorage.getItem('mtpd-dark') === '1') {
+    document.body.classList.add('dark');
+    document.addEventListener('DOMContentLoaded', () => {
+      const track = document.getElementById('toggle-track');
+      const icon  = document.getElementById('theme-icon');
+      const label = document.getElementById('theme-label');
+      if (track) track.classList.add('on');
+      if (icon)  icon.textContent  = '☀️';
+      if (label) label.textContent = 'Light mode';
+    });
+  }
+})();
 </script>
 
 </body>
