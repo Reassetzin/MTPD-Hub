@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.31</div>
+      <div class="sidebar-version">Magic Touch v3.32</div>
     </div>
   </aside>
 
@@ -835,15 +835,39 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
   <div class="modal">
     <div class="modal-drag"></div>
     <h3>New Client</h3>
+
+    <!-- Contact -->
     <div class="form-row">
-      <div class="form-group"><label>First Name</label><input id="nc-first" placeholder="First"></div>
+      <div class="form-group"><label>First Name *</label><input id="nc-first" placeholder="First"></div>
       <div class="form-group"><label>Last Name</label><input id="nc-last" placeholder="Last"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Phone</label><input id="nc-phone" type="tel" placeholder="(555) 000-0000"></div>
       <div class="form-group"><label>Email</label><input id="nc-email" type="email" placeholder="email@example.com"></div>
     </div>
-    <div class="form-group"><label>Address</label><input id="nc-address" placeholder="Street, City, State ZIP"></div>
+    <div class="form-group">
+      <label>Address</label>
+      <div style="position:relative">
+        <input id="nc-address" placeholder="Start typing street address…" autocomplete="off"
+          oninput="ncAddressAutocomplete(this.value)"
+          onblur="setTimeout(()=>document.getElementById('nc-addr-suggestions').style.display='none',200)">
+        <div id="nc-addr-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:var(--r2);z-index:600;box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:200px;overflow-y:auto;margin-top:2px"></div>
+      </div>
+    </div>
+    <div class="form-group"><label>Suite / Apt / Unit / Office</label><input id="nc-suite" placeholder="e.g. Apt 2B, Suite 100"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Preferred Contact</label>
+        <select id="nc-contact-pref"><option value="">—</option><option>Call</option><option>Text</option><option>Email</option></select>
+      </div>
+      <div class="form-group"><label>Referral Source</label>
+        <select id="nc-referral"><option value="">—</option><option>Facebook</option><option>Instagram</option><option>Google</option><option>Word of Mouth</option><option>Nextdoor</option><option>Other</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="nc-notes" rows="2" placeholder="Gate code, special instructions…"></textarea></div>
+
+    <div style="border-top:1px solid var(--border);margin:14px 0 12px;"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Pet (optional)</div>
+
     <div class="form-group">
       <label>Species</label>
       <div style="display:flex;gap:8px">
@@ -857,9 +881,29 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
       <div class="form-group"><label>Breed</label><input id="nc-breed" placeholder="e.g. Labrador"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Date of Birth</label><input id="nc-dob" type="date" oninput="document.getElementById('nc-age-display').textContent=calcAge(this.value)"><div id="nc-age-display" style="font-size:11px;color:var(--green);font-weight:600;margin-top:3px;min-height:14px"></div></div>
-      <div class="form-group"><label>Weight (lbs)</label><input id="nc-weightlbs" type="number" placeholder="e.g. 25" oninput="updateNcPrice()"><div id="nc-price-display" style="font-size:11px;color:var(--peach);font-weight:600;margin-top:3px;min-height:14px"></div></div>
+      <div class="form-group">
+        <label>Gender</label>
+        <select id="nc-gender"><option value="">—</option><option>Male</option><option>Female</option></select>
+      </div>
+      <div class="form-group">
+        <label>Weight (lbs)</label>
+        <input id="nc-weightlbs" type="number" placeholder="e.g. 25" oninput="updateNcPrice()">
+        <div id="nc-price-display" style="font-size:11px;color:var(--peach);font-weight:600;margin-top:3px;min-height:14px"></div>
+      </div>
     </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date of Birth</label>
+        <input id="nc-dob" type="date" oninput="document.getElementById('nc-age-display').textContent=calcAge(this.value)">
+        <div id="nc-age-display" style="font-size:11px;color:var(--green);font-weight:600;margin-top:3px;min-height:14px"></div>
+      </div>
+      <div class="form-group">
+        <label>Dental Score</label>
+        <select id="nc-dental"><option value="">—</option><option>1 - Minimal buildup</option><option>2 - Mild buildup</option><option>3 - Moderate buildup</option><option>4 - Heavy buildup</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Medical Notes</label><textarea id="nc-medical" rows="2" placeholder="Allergies, conditions, medications…"></textarea></div>
+
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeNewClientModal()">Cancel</button>
       <button class="btn-primary" onclick="addNewClient()">Add Client</button>
@@ -1716,33 +1760,56 @@ function updateNcPrice() {
 
 async function addNewClient() {
   const first = document.getElementById('nc-first').value.trim();
-  const last = document.getElementById('nc-last').value.trim();
+  const last  = document.getElementById('nc-last').value.trim();
   if (!first) { showToast('⚠️ First name required'); return; }
   const fullName = last ? `${first} ${last}` : first;
+
   if (!BASE_APPTS[fullName]) BASE_APPTS[fullName] = {pets:{},total_spent:0,visits:0};
-  const petName = document.getElementById('nc-pet').value.trim();
-  if (petName) BASE_APPTS[fullName].pets[petName] = [];
   if (!clientExtra[fullName]) clientExtra[fullName] = {};
-  clientExtra[fullName].phone = document.getElementById('nc-phone').value;
-  clientExtra[fullName].email = document.getElementById('nc-email').value;
-  clientExtra[fullName].address = document.getElementById('nc-address').value;
+
+  // Contact info
+  clientExtra[fullName].phone       = document.getElementById('nc-phone').value.trim();
+  clientExtra[fullName].email       = document.getElementById('nc-email').value.trim();
+  clientExtra[fullName].address     = document.getElementById('nc-address').value.trim();
+  clientExtra[fullName].suite       = document.getElementById('nc-suite').value.trim();
+  clientExtra[fullName].contactPref = document.getElementById('nc-contact-pref').value;
+  clientExtra[fullName].referral    = document.getElementById('nc-referral').value;
+  clientExtra[fullName].notes       = document.getElementById('nc-notes').value.trim();
+
+  // Pet
+  const petName = document.getElementById('nc-pet').value.trim();
   if (petName) {
+    BASE_APPTS[fullName].pets[petName] = [];
     if (!clientExtra[fullName].petExtras) clientExtra[fullName].petExtras = {};
     clientExtra[fullName].petExtras[petName] = {
-      species: document.getElementById('nc-species').value || 'dog',
-      breed: document.getElementById('nc-breed').value,
-      dob: document.getElementById('nc-dob').value,
-      weightlbs: document.getElementById('nc-weightlbs').value,
+      species:    document.getElementById('nc-species').value || 'dog',
+      gender:     document.getElementById('nc-gender').value,
+      breed:      document.getElementById('nc-breed').value.trim(),
+      dob:        document.getElementById('nc-dob').value,
+      weightlbs:  document.getElementById('nc-weightlbs').value,
+      dental:     document.getElementById('nc-dental').value,
+      medical:    document.getElementById('nc-medical').value.trim(),
     };
   }
-  await saveExtra(fullName); closeNewClientModal(); computeStats(); renderClients();
-  showToast(`✅ ${fullName} added to database!`);
-  ['nc-first','nc-last','nc-phone','nc-email','nc-address','nc-pet','nc-breed','nc-dob','nc-weightlbs'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('nc-species').value='dog';
+
+  await saveExtra(fullName);
+  closeNewClientModal();
+  computeStats(); renderClients();
+  showToast(`✅ ${fullName} added!`);
+  openProfile(fullName);
+
+  // Reset form
+  ['nc-first','nc-last','nc-phone','nc-email','nc-address','nc-suite','nc-notes','nc-pet','nc-breed','nc-dob','nc-weightlbs','nc-medical'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['nc-contact-pref','nc-referral','nc-gender','nc-dental'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('nc-species').value = 'dog';
   document.getElementById('nc-species-dog').classList.add('active');
   document.getElementById('nc-species-cat').classList.remove('active');
-  const ageEl=document.getElementById('nc-age-display'); if(ageEl) ageEl.textContent='';
-  const priceEl=document.getElementById('nc-price-display'); if(priceEl) priceEl.textContent='';
+  const ageEl = document.getElementById('nc-age-display'); if (ageEl) ageEl.textContent = '';
+  const priceEl = document.getElementById('nc-price-display'); if (priceEl) priceEl.textContent = '';
 }
 
 // ── TAGGING SYSTEM ────────────────────────────────────────────────────────
@@ -2716,6 +2783,41 @@ function selectAddress(label, lat, lng) {
   renderMap(label);
 }
 
+// ── NC ADDRESS AUTOCOMPLETE ───────────────────────────────────────────────
+let _ncAddrTimer = null;
+function ncAddressAutocomplete(val) {
+  const box = document.getElementById('nc-addr-suggestions');
+  if (!val || val.length < 4) { box.style.display='none'; return; }
+  clearTimeout(_ncAddrTimer);
+  _ncAddrTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(val)}&limit=6&countrycodes=us`, {headers:{'Accept-Language':'en'}});
+      const data = await res.json();
+      if (!data.length) { box.style.display='none'; return; }
+      const seen = new Set();
+      box.innerHTML = data.map(d => {
+        const a = d.address || {};
+        const street = [a.house_number, a.road].filter(Boolean).join(' ');
+        const city   = a.city || a.town || a.village || a.municipality || '';
+        const state  = STATE_ABBR[a.state] || a.state || '';
+        const zip    = a.postcode || '';
+        if (!street || !city) return '';
+        const formatted = `${street}, ${city}, ${state} ${zip}`.trim();
+        if (seen.has(formatted)) return '';
+        seen.add(formatted);
+        return `<div class="addr-option" onclick="ncSelectAddress('${formatted.replace(/'/g,"\\'")}',${d.lat},${d.lon})">${formatted}</div>`;
+      }).filter(Boolean).join('');
+      if (!box.innerHTML) { box.style.display='none'; return; }
+      box.style.display = 'block';
+    } catch(e) { box.style.display='none'; }
+  }, 350);
+}
+function ncSelectAddress(label, lat, lng) {
+  document.getElementById('nc-address').value = label;
+  geocodeCache[label] = { lat:parseFloat(lat), lng:parseFloat(lng) };
+  document.getElementById('nc-addr-suggestions').style.display = 'none';
+}
+
 // ── DELETE CLIENT ─────────────────────────────────────────────────────────
 async function deleteClient() {
   if (!openClientName) return;
@@ -2794,7 +2896,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.31</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.32</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
