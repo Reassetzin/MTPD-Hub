@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.30</div>
+      <div class="sidebar-version">Magic Touch v3.31</div>
     </div>
   </aside>
 
@@ -783,10 +783,14 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
         <div class="field-group field-full">
           <label>Address</label>
           <div style="position:relative">
-            <input class="field-input" id="f-address" placeholder="Start typing address…" autocomplete="off"
+            <input class="field-input" id="f-address" placeholder="Start typing street address…" autocomplete="off"
               oninput="addressAutocomplete(this.value)" onblur="setTimeout(()=>document.getElementById('addr-suggestions').style.display='none',200)">
             <div id="addr-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:var(--r2);z-index:500;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:220px;overflow-y:auto;margin-top:2px"></div>
           </div>
+        </div>
+        <div class="field-group field-full">
+          <label>Suite / Apt / Unit / Office</label>
+          <input class="field-input" id="f-suite" placeholder="e.g. Apt 2B, Suite 100, Unit 4">
         </div>
         <div class="field-group"><label>Preferred Contact</label>
           <select class="field-input" id="f-contact-pref"><option value="">—</option><option>Call</option><option>Text</option><option>Email</option></select>
@@ -1029,7 +1033,7 @@ async function loadExtra() {
     if (clients) {
       clients.forEach(c => {
         clientExtra[c.name] = {
-          phone: c.phone||'', email: c.email||'', address: c.address||'',
+          phone: c.phone||'', email: c.email||'', address: c.address||'', suite: c.suite||'',
           contactPref: c.contact_pref||'', referral: c.referral||'',
           notes: c.notes||'', lat: c.lat, lng: c.lng,
           petExtras: {}
@@ -1100,7 +1104,7 @@ async function saveExtra(name) {
     name,
     phone: ex.phone||null, email: ex.email||null, address: ex.address||null,
     contact_pref: ex.contactPref||null, referral: ex.referral||null,
-    notes: ex.notes||null, lat: ex.lat||null, lng: ex.lng||null
+    notes: ex.notes||null, lat: ex.lat||null, lng: ex.lng||null, suite: ex.suite||null
   };
 
   try {
@@ -1358,6 +1362,7 @@ function openProfile(name) {
   document.getElementById('f-phone').value = ex.phone || '';
   document.getElementById('f-email').value = ex.email || '';
   document.getElementById('f-address').value = ex.address || '';
+  document.getElementById('f-suite').value = ex.suite || '';
   document.getElementById('f-notes').value = ex.notes || '';
   document.getElementById('f-contact-pref').value = ex.contactPref || '';
   document.getElementById('f-referral').value = ex.referral || '';
@@ -1500,6 +1505,7 @@ async function saveClientInfo() {
   ex.phone = document.getElementById('f-phone').value;
   ex.email = document.getElementById('f-email').value;
   ex.address = document.getElementById('f-address').value;
+  ex.suite = document.getElementById('f-suite').value.trim();
   ex.notes = document.getElementById('f-notes').value;
   ex.contactPref = document.getElementById('f-contact-pref').value;
   ex.referral = document.getElementById('f-referral').value;
@@ -1533,7 +1539,9 @@ function renderMap(address) {
   }
 
   if (link) {
-    link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    const suite = (clientExtra[openClientName]||{}).suite || '';
+  const fullAddr = suite ? address + ', ' + suite : address;
+  link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddr)}`;
     link.style.display = 'flex';
   }
   if (section) section.style.display = 'block';
@@ -2786,7 +2794,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.30</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.31</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
