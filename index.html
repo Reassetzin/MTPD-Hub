@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.34</div>
+      <div class="sidebar-version">Magic Touch v3.35</div>
     </div>
   </aside>
 
@@ -1141,7 +1141,9 @@ async function loadExtra() {
 async function saveExtra(name) {
   const ex = clientExtra[name];
   if (!ex) return;
-  if (!dbReady) { showToast('⚠️ Not connected to database'); return; }
+  if (!dbReady) {
+    console.warn('DB not ready, attempting save anyway...');
+  }
 
   const payload = {
     name,
@@ -1805,7 +1807,13 @@ async function addNewClient() {
     };
   }
 
-  await saveExtra(fullName);
+  try {
+    await saveExtra(fullName);
+  } catch(e) {
+    console.error('saveExtra failed:', e);
+    showToast('⚠️ Save failed — check console');
+    return;
+  }
   closeNewClientModal();
   computeStats(); renderClients();
   showToast(`✅ ${fullName} added!`);
@@ -2910,7 +2918,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.34</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.35</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
