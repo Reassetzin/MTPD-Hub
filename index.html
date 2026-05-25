@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.39</div>
+      <div class="sidebar-version">Magic Touch v3.40</div>
     </div>
   </aside>
 
@@ -1553,6 +1553,8 @@ function renderTimeline(name, cd) {
             onclick="quickStatus('${name.replace(/'/g,"\\'")}','${v.pet.replace(/'/g,"\\'")}',${v.petIdx},'Completed')">✅ Done</button>`:''}
           ${v.status!=='Cancelled'?`<button class="btn btn-sm" style="padding:3px 10px;font-size:11px;background:#fde8e8;color:#c0392b;border:1.5px solid #f5c6c6"
             onclick="quickStatus('${name.replace(/'/g,"\\'")}','${v.pet.replace(/'/g,"\\'")}',${v.petIdx},'Cancelled')">✕ Cancel</button>`:''}
+          <button class="btn btn-sm" style="padding:3px 10px;font-size:11px;background:transparent;color:var(--ink4);border:1px solid var(--border)"
+            onclick="quickDeleteAppt('${name.replace(/'/g,"\\'")}','${v.pet.replace(/'/g,"\\'")}',${v.petIdx})">🗑</button>
         </div>
       </div>
     </div>`).join('');
@@ -2622,6 +2624,21 @@ function editAppt(clientName, petName, petIdx) {
   document.getElementById('appt-modal').classList.add('open');
 }
 
+async function quickDeleteAppt(clientName, petName, petIdx) {
+  const visits = BASE_APPTS[clientName]?.pets[petName];
+  if (!visits || !visits[petIdx]) return;
+  if (!confirm('Delete this appointment permanently?')) return;
+  const visit = visits[petIdx];
+  if (visit.db_id) {
+    await sb.delete(`crm_appointments?id=eq.${visit.db_id}`);
+  }
+  visits.splice(petIdx, 1);
+  computeStats(); renderClients(); buildOutreach(); buildScheduled();
+  openClientName = clientName;
+  openProfile(clientName);
+  showToast('🗑 Appointment deleted');
+}
+
 async function quickStatus(clientName, petName, petIdx, newStatus) {
   const visits = BASE_APPTS[clientName]?.pets[petName];
   if (!visits || !visits[petIdx]) return;
@@ -2921,7 +2938,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.39</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.40</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
