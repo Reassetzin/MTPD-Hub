@@ -411,7 +411,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
 /* ══ MODALS ════════════════════════════════════════ */
 .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.25); backdrop-filter:blur(4px); z-index:1200; align-items:flex-end; justify-content:center; }
 .modal-overlay.open { display:flex; }
-.modal { background:var(--white); border-radius:14px 14px 0 0; padding:6px 20px 28px; width:100%; max-width:460px; max-height:90vh; overflow-y:auto; animation:slideUp .2s ease; box-shadow:0 -4px 24px rgba(0,0,0,.1); }
+.modal { background:var(--white); border-radius:16px 16px 0 0; padding:6px 20px 32px; width:100%; max-width:480px; max-height:92vh; overflow-y:auto; animation:slideUp .2s ease; box-shadow:0 -4px 24px rgba(0,0,0,.12); position:relative; z-index:1; }
 .modal-drag { width:32px; height:3px; background:var(--border); border-radius:2px; margin:10px auto 16px; }
 .modal h3 { font-size:16px; font-weight:700; color:var(--ink); margin-bottom:16px; letter-spacing:-.2px; }
 .form-group { margin-bottom:11px; }
@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.35</div>
+      <div class="sidebar-version">Magic Touch v3.36</div>
     </div>
   </aside>
 
@@ -904,8 +904,8 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
     <div class="form-group"><label>Medical Notes</label><textarea id="nc-medical" rows="2" placeholder="Allergies, conditions, medications…"></textarea></div>
 
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeNewClientModal()">Cancel</button>
-      <button class="btn-primary" onclick="addNewClient()">Add Client</button>
+      <button class="btn-ghost" onclick="event.stopPropagation();closeNewClientModal()">Cancel</button>
+      <button class="btn-primary" onclick="event.stopPropagation();addNewClient()">Add Client</button>
     </div>
   </div>
 </div>
@@ -1765,7 +1765,7 @@ async function addPet() {
 // ── NEW CLIENT MODAL ──────────────────────────────────────────────────────
 function openNewClientModal() { document.getElementById('new-client-modal').classList.add('open'); }
 function closeNewClientModal() { document.getElementById('new-client-modal').classList.remove('open'); }
-function closeNewClientOutside(e) { if(e.target===document.getElementById('new-client-modal')) closeNewClientModal(); }
+function closeNewClientOutside(e) { if(e.target===document.getElementById('new-client-modal')) closeNewClientModal(); e.stopPropagation && e.stopPropagation(); }
 function updateNcPrice() {
   const s = document.getElementById('nc-species').value;
   const w = document.getElementById('nc-weightlbs').value;
@@ -2918,7 +2918,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.35</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.36</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
