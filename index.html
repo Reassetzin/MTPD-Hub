@@ -220,6 +220,11 @@ body.dark .vbtn.active { background:#e8e4de; color:#111111; }
 .btn-ghost:hover { background:var(--bg); border-color:var(--border2); }
 .btn-danger { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:var(--r2); border:1px solid var(--red-border); background:var(--red-bg); color:var(--red); font-family:'Inter',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .12s; }
 .btn-sm { padding:5px 10px; font-size:12px; }
+.addr-option { padding:9px 12px; font-size:13px; color:var(--ink2); cursor:pointer; border-bottom:1px solid var(--border); transition:background .1s; }
+.addr-option:last-child { border-bottom:none; }
+.addr-option:hover { background:var(--bg); }
+body.dark .addr-option { color:var(--ink2); background:var(--white); }
+body.dark .addr-option:hover { background:#2a2a2e; }
 .btn-row { padding:4px 12px; border-radius:6px; border:none; background:transparent; font-family:'Inter',sans-serif; font-size:12px; font-weight:500; color:var(--ink3); cursor:pointer; transition:all .12s; white-space:nowrap; }
 .btn-row:hover { background:var(--bg); color:var(--ink); }
 body.dark .btn-row { color:#888; }
@@ -554,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.29</div>
+      <div class="sidebar-version">Magic Touch v3.30</div>
     </div>
   </aside>
 
@@ -775,7 +780,14 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
       <div class="field-grid">
         <div class="field-group"><label>Phone</label><input class="field-input" id="f-phone" type="tel" placeholder="(555) 000-0000"></div>
         <div class="field-group"><label>Email</label><input class="field-input" id="f-email" type="email" placeholder="email@example.com"></div>
-        <div class="field-group field-full"><label>Address</label><input class="field-input" id="f-address" placeholder="Street, City, State ZIP"></div>
+        <div class="field-group field-full">
+          <label>Address</label>
+          <div style="position:relative">
+            <input class="field-input" id="f-address" placeholder="Start typing address…" autocomplete="off"
+              oninput="addressAutocomplete(this.value)" onblur="setTimeout(()=>document.getElementById('addr-suggestions').style.display='none',200)">
+            <div id="addr-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:var(--r2);z-index:500;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:220px;overflow-y:auto;margin-top:2px"></div>
+          </div>
+        </div>
         <div class="field-group"><label>Preferred Contact</label>
           <select class="field-input" id="f-contact-pref"><option value="">—</option><option>Call</option><option>Text</option><option>Email</option></select>
         </div>
@@ -789,6 +801,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
         <button class="btn-ghost" onclick="copyReminderForProfile()">Copy Reminder</button>
         <button class="btn-ghost" onclick="openApptModal()" style="background:#f0f8f2;color:#3d7a52;border-color:#c8e6cc">+ Appointment</button>
         <a id="map-directions-link" href="#" target="_blank" class="btn-ghost" style="display:none;text-decoration:none">📍 Maps</a>
+        <button class="btn-ghost btn-sm" onclick="deleteClient()" style="margin-left:auto;color:var(--red);border-color:#fca5a5" title="Delete client">🗑</button>
       </div>
 
       <!-- Map -->
@@ -2668,6 +2681,51 @@ const KNOWN_COORDS = {
 };
 Object.entries(KNOWN_COORDS).forEach(([addr, coords]) => { geocodeCache[addr] = coords; });
 
+// ── ADDRESS AUTOCOMPLETE ──────────────────────────────────────────────────
+let _addrTimer = null;
+function addressAutocomplete(val) {
+  const box = document.getElementById('addr-suggestions');
+  if (!val || val.length < 4) { box.style.display='none'; return; }
+  clearTimeout(_addrTimer);
+  _addrTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&limit=6&countrycodes=us`, {headers:{'Accept-Language':'en'}});
+      const data = await res.json();
+      if (!data.length) { box.style.display='none'; return; }
+      box.innerHTML = data.map(d => {
+        const parts = d.display_name.split(',').map(s=>s.trim());
+        const short = parts.slice(0,4).join(', ');
+        return `<div class="addr-option" onclick="selectAddress('${short.replace(/'/g,"\\'")}',${d.lat},${d.lon})">${short}</div>`;
+      }).join('');
+      box.style.display = 'block';
+    } catch(e) { box.style.display='none'; }
+  }, 350);
+}
+function selectAddress(label, lat, lng) {
+  document.getElementById('f-address').value = label;
+  geocodeCache[label] = { lat:parseFloat(lat), lng:parseFloat(lng) };
+  document.getElementById('addr-suggestions').style.display = 'none';
+  renderMap(label);
+}
+
+// ── DELETE CLIENT ─────────────────────────────────────────────────────────
+async function deleteClient() {
+  if (!openClientName) return;
+  if (!confirm(`Delete ${openClientName} and all their data? This cannot be undone.`)) return;
+  const name = openClientName;
+  await fetch(`${SUPABASE_URL}/rest/v1/crm_clients?name=eq.${encodeURIComponent(name)}`, {
+    method:'DELETE', headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}
+  });
+  await fetch(`${SUPABASE_URL}/rest/v1/crm_appointments?client_name=eq.${encodeURIComponent(name)}`, {
+    method:'DELETE', headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}
+  });
+  delete clientExtra[name];
+  delete BASE_APPTS[name];
+  closeProfile();
+  computeStats(); renderClients(); buildOutreach(); buildScheduled();
+  showToast(`🗑 ${name} deleted`);
+}
+
 async function init() {
   await loadExtra();
   computeStats();
@@ -2728,7 +2786,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.29</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.30</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
