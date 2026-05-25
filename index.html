@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.33</div>
+      <div class="sidebar-version">Magic Touch v3.34</div>
     </div>
   </aside>
 
@@ -1316,30 +1316,44 @@ function showToast(msg) {
 function computeStats() {
   const names = allClients();
   let totalRev = 0, totalPets = 0, totalVisits = 0;
+
+  // Recompute total_spent and visits from actual appointments (never trust cache)
   names.forEach(n => {
     const cd = clientData(n);
-    totalRev += cd.total_spent;
+    let spent = 0, visits = 0;
+    Object.values(cd.pets).forEach(appts => {
+      appts.forEach(v => {
+        if (v.status === 'Completed') {
+          spent += parseInt(v.price)||0;
+          visits++;
+        }
+      });
+    });
+    cd.total_spent = spent;
+    cd.visits = visits;
+    totalRev += spent;
+    totalVisits += visits;
     totalPets += getAllPets(n).length;
-    totalVisits += cd.visits;
   });
+
   document.getElementById('s-clients').textContent = names.length;
   document.getElementById('s-revenue').textContent = fmtMoney(totalRev);
   document.getElementById('s-pets').textContent = totalPets;
   document.getElementById('s-avg').textContent = totalVisits > 0 ? fmtMoney(Math.round(totalRev/totalVisits)) : '—';
 
-  // dashboard stats
-  let completed=0, scheduled=0, cancelled=0, dRev=0;
+  // Dashboard stats
+  let completed=0, scheduled=0, cancelled=0;
   Object.values(BASE_APPTS).forEach(cd => {
     Object.values(cd.pets).forEach(visits => {
       visits.forEach(v => {
-        if (v.status==='Completed'){completed++;dRev+=parseInt(v.price)||0;}
+        if (v.status==='Completed') completed++;
         else if (v.status==='Scheduled') scheduled++;
         else if (v.status==='Cancelled') cancelled++;
       });
     });
   });
   document.getElementById('d-completed').textContent = completed;
-  document.getElementById('d-revenue').textContent = fmtMoney(dRev);
+  document.getElementById('d-revenue').textContent = fmtMoney(totalRev);
   document.getElementById('d-scheduled').textContent = scheduled;
   document.getElementById('d-cancelled').textContent = cancelled;
 }
@@ -2632,13 +2646,14 @@ function closeApptOutside(e) { if(e.target===document.getElementById('appt-modal
 function updateApptPrice() {
   const clientName = document.getElementById('appt-modal').dataset.client;
   const petName = document.getElementById('appt-pet').value;
+  const priceField = document.getElementById('appt-price');
+  const hint = document.getElementById('appt-price-hint');
   if (!petName || !clientName) return;
   const pe = (clientExtra[clientName]?.petExtras?.[petName]) || {};
-  if (pe.weightlbs || pe.species) {
-    const price = calcPrice(pe.species||'dog', pe.weightlbs||0);
-    document.getElementById('appt-price').value = price;
-    document.getElementById('appt-price-hint').textContent = `→ Suggested: $${price}`;
-  }
+  const suggested = calcPrice(pe.species||'dog', pe.weightlbs||0);
+  hint.textContent = `Suggested: $${suggested} — edit for discounts`;
+  // Only auto-fill if price is empty (new appointment) — don't overwrite on edit
+  if (!priceField.value) priceField.value = suggested;
 }
 
 async function deleteAppt() {
@@ -2895,7 +2910,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.33</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.34</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
