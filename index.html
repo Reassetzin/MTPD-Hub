@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.40</div>
+      <div class="sidebar-version">Magic Touch v3.41</div>
     </div>
   </aside>
 
@@ -699,8 +699,19 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
               <button class="btn-primary" onclick="openRouteInMaps()">Open in Maps ↗</button>
             </div>
           </div>
-          <div id="map-info-bar" style="font-size:12px;color:var(--muted)"></div>
+          <!-- Location search -->
+          <div style="position:relative;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="position:relative">
+              <input id="map-location-search" class="field-input" placeholder="🔍 Search a location…" style="width:240px;padding:7px 12px"
+                autocomplete="off"
+                oninput="mapLocationAutocomplete(this.value)"
+                onblur="setTimeout(()=>document.getElementById('map-location-suggestions').style.display='none',200)">
+              <div id="map-location-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:var(--r2);z-index:500;box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:200px;overflow-y:auto;margin-top:2px"></div>
+            </div>
+            <button class="btn-ghost btn-sm" onclick="clearMapLocationPin()" id="map-location-clear" style="display:none">✕ Clear pin</button>
+          </div>
         </div>
+        <div id="map-info-bar" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr 260px;gap:14px;height:560px">
           <div id="main-map" style="border-radius:12px;overflow:hidden;border:1px solid var(--border);height:100%"></div>
           <div class="map-sidebar-panel">
@@ -2841,6 +2852,58 @@ function selectAddress(label, lat, lng) {
   renderMap(label);
 }
 
+// ── MAP LOCATION SEARCH ───────────────────────────────────────────────────
+let _mapLocTimer = null;
+let _mapLocMarker = null;
+
+function mapLocationAutocomplete(val) {
+  const box = document.getElementById('map-location-suggestions');
+  if (!val || val.length < 3) { box.style.display='none'; return; }
+  clearTimeout(_mapLocTimer);
+  _mapLocTimer = setTimeout(async () => {
+    try {
+      const data = await _fetchAddrs(val);
+      if (!data.length) { box.style.display='none'; return; }
+      const seen = new Set();
+      box.innerHTML = data.map(d => {
+        const a = d.address || {};
+        const street = [a.house_number, a.road].filter(Boolean).join(' ');
+        const city   = a.city || a.town || a.village || a.municipality || '';
+        const state  = STATE_ABBR[a.state] || a.state || '';
+        const zip    = a.postcode || '';
+        const label  = street ? `${street}, ${city}, ${state} ${zip}`.trim() : d.display_name.split(',').slice(0,3).join(',').trim();
+        if (seen.has(label)) return '';
+        seen.add(label);
+        return `<div class="addr-option" onclick="pinMapLocation('${label.replace(/'/g,"\\'")}',${d.lat},${d.lon})">${label}</div>`;
+      }).filter(Boolean).join('');
+      box.style.display = box.innerHTML ? 'block' : 'none';
+    } catch(e) { box.style.display='none'; }
+  }, 300);
+}
+
+function pinMapLocation(label, lat, lng) {
+  document.getElementById('map-location-search').value = label;
+  document.getElementById('map-location-suggestions').style.display = 'none';
+  document.getElementById('map-location-clear').style.display = 'inline-flex';
+  if (!mainMapInstance) return;
+  if (_mapLocMarker) { _mapLocMarker.remove(); _mapLocMarker = null; }
+  const html = `<div style="width:36px;height:36px;border-radius:50%;background:#6c3fc5;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:16px">📍</div>`;
+  _mapLocMarker = L.marker([parseFloat(lat), parseFloat(lng)], {
+    icon: L.divIcon({ html, className:'', iconSize:[36,36], iconAnchor:[18,18], popupAnchor:[0,-20] }),
+    zIndexOffset: 1000
+  })
+  .bindPopup(`<div style="font-family:'Inter',sans-serif;font-size:13px"><b>📍 ${label}</b><br><span style="font-size:11px;color:#888">Search location</span></div>`)
+  .addTo(mainMapInstance).openPopup();
+  mainMapInstance.setView([parseFloat(lat), parseFloat(lng)], 13);
+}
+
+function clearMapLocationPin() {
+  if (_mapLocMarker) { _mapLocMarker.remove(); _mapLocMarker = null; }
+  document.getElementById('map-location-search').value = '';
+  document.getElementById('map-location-clear').style.display = 'none';
+}
+
+// ── NC ADDRESS AUTOCOMPLETE ───────────────────────────────────────────────
 let _ncAddrTimer = null;
 function ncAddressAutocomplete(val) {
   const box = document.getElementById('nc-addr-suggestions');
@@ -2938,7 +3001,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.40</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.41</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
