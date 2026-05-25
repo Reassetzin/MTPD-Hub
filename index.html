@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.37</div>
+      <div class="sidebar-version">Magic Touch v3.38</div>
     </div>
   </aside>
 
@@ -2643,9 +2643,9 @@ async function quickStatus(clientName, petName, petIdx, newStatus) {
     const res = await saveAppointment(clientName, petName, visit.date, visit.price, newStatus);
     if (res && res[0]) visit.db_id = res[0].id;
   }
+  computeStats(); renderClients(); buildOutreach(); buildScheduled();
   openClientName = clientName;
   openProfile(clientName);
-  computeStats(); renderClients(); buildOutreach(); buildScheduled();
   showToast(`✅ Marked as ${newStatus}`);
 }
 
@@ -2919,7 +2919,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.37</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.38</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
