@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.38</div>
+      <div class="sidebar-version">Magic Touch v3.39</div>
     </div>
   </aside>
 
@@ -2627,26 +2627,28 @@ async function quickStatus(clientName, petName, petIdx, newStatus) {
   if (!visits || !visits[petIdx]) return;
   const visit = visits[petIdx];
   const old = visit.status;
-  visit.status = newStatus;
-  // Adjust totals
-  if (old !== 'Completed' && newStatus === 'Completed') {
-    BASE_APPTS[clientName].total_spent += parseInt(visit.price)||0;
-    BASE_APPTS[clientName].visits++;
-  } else if (old === 'Completed' && newStatus !== 'Completed') {
-    BASE_APPTS[clientName].total_spent -= parseInt(visit.price)||0;
-    BASE_APPTS[clientName].visits--;
+
+  // Auto-fill price from pet weight if missing
+  if (!visit.price || visit.price === '0') {
+    const pe = (clientExtra[clientName]?.petExtras?.[petName]) || {};
+    const suggested = calcPrice(pe.species||'dog', pe.weightlbs||0);
+    if (suggested) visit.price = String(suggested);
   }
-  // Always persist to DB — upsert if no db_id
+
+  visit.status = newStatus;
+
+  // Save to DB with price included
   if (visit.db_id) {
-    await sb.patch(`crm_appointments?id=eq.${visit.db_id}`, { status: newStatus });
+    await sb.patch(`crm_appointments?id=eq.${visit.db_id}`, { status: newStatus, price: String(visit.price||'0') });
   } else {
     const res = await saveAppointment(clientName, petName, visit.date, visit.price, newStatus);
     if (res && res[0]) visit.db_id = res[0].id;
   }
+
   computeStats(); renderClients(); buildOutreach(); buildScheduled();
   openClientName = clientName;
   openProfile(clientName);
-  showToast(`✅ Marked as ${newStatus}`);
+  showToast(`✅ Marked as ${newStatus}${newStatus==='Completed'&&visit.price?' — $'+visit.price+' added to revenue':''}`);
 }
 
 function closeApptModal() { document.getElementById('appt-modal').classList.remove('open'); }
@@ -2919,7 +2921,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.38</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.39</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
