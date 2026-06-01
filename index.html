@@ -564,7 +564,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.56</div>
+      <div class="sidebar-version">Magic Touch v3.57</div>
     </div>
   </aside>
 
@@ -3089,45 +3089,69 @@ async function loadLeads() {
 
 function renderLeads() {
   const el = document.getElementById('leads-list');
-  if (!leadsData.length) { el.innerHTML = '<div class="empty"><span class="emoji">📭</span>No leads yet. Submissions from your website will appear here.</div>'; return; }
+  if (!leadsData.length) {
+    el.innerHTML = '<div class="empty"><span class="emoji">📭</span><div>No leads yet</div><div style="font-size:12px;margin-top:4px">Booking requests from your website will appear here</div></div>';
+    return;
+  }
+
   el.innerHTML = leadsData.map(l => {
     const pets = l.pets || [];
     const name = `${l.first_name||''} ${l.last_name||''}`.trim();
     const date = new Date(l.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
     const time = new Date(l.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
     const isPending = l.status === 'pending';
-    const statusColor = isPending ? 'var(--amber)' : l.status==='added' ? 'var(--green)' : 'var(--ink4)';
-    const statusBg    = isPending ? 'var(--amber-bg)' : l.status==='added' ? 'var(--green-bg)' : 'var(--bg)';
-    const petChips = pets.map(p => {
+    const isAdded   = l.status === 'added';
+
+    const statusPill = isPending
+      ? `<span style="background:#fffbeb;color:#b45309;border:1px solid #fcd34d;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;letter-spacing:.3px">NEW</span>`
+      : isAdded
+      ? `<span style="background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px">ADDED</span>`
+      : `<span style="background:var(--bg);color:var(--ink4);border:1px solid var(--border);font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px">DISMISSED</span>`;
+
+    const petRows = pets.map(p => {
       const icon = p.petType?.toLowerCase().includes('cat') ? '🐈' : '🐕';
-      return `<span style="background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px">${icon} ${p.petName}${p.petWeight?' · '+p.petWeight+'lbs':''}</span>`;
+      const details = [p.petBreed, p.petWeight?p.petWeight+'lbs':'', p.petSex].filter(Boolean).join(' · ');
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:16px">${icon}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink)">${normalizeName(p.petName||'')}</div>
+          ${details ? `<div style="font-size:11px;color:var(--ink4)">${details}</div>` : ''}
+          ${p.medicalConditions && p.medicalConditions !== 'No, healthy!' ? `<div style="font-size:11px;color:var(--red);margin-top:1px">⚠️ ${p.medicalConditions}</div>` : ''}
+        </div>
+      </div>`;
     }).join('');
-    return `<div id="lead-${l.id}" style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px;transition:box-shadow .15s">
-      <!-- Header -->
-      <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">
-        <div class="avatar" style="width:40px;height:40px;border-radius:10px;font-size:13px;flex-shrink:0">${initials(name||'?')}</div>
+
+    return `
+    <div id="lead-${l.id}" style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px">
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:12px">
+        <div class="avatar" style="width:42px;height:42px;border-radius:50%;font-size:14px;flex-shrink:0">${initials(name||'?')}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:14px;color:var(--ink)">${name}</div>
-          <div style="font-size:11px;color:var(--ink4);margin-top:1px">${date} at ${time}</div>
+          <div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:1px">${name}</div>
+          <div style="font-size:11px;color:var(--ink4)">${date} · ${time}</div>
         </div>
-        <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${statusBg};color:${statusColor};border:1px solid ${statusColor};flex-shrink:0">${l.status}</span>
-      </div>
-      <!-- Body -->
-      <div style="padding:12px 16px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-bottom:10px">
-          ${l.phone ? `<div style="font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:5px"><span style="color:var(--ink4)">📞</span>${l.phone}</div>` : ''}
-          ${l.email ? `<div style="font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:5px;overflow:hidden"><span style="color:var(--ink4)">✉️</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.email}</span></div>` : ''}
-          ${l.address ? `<div style="font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:5px;grid-column:1/-1"><span style="color:var(--ink4)">📍</span>${l.address}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          ${statusPill}
+          <button onclick="deleteLead(${l.id})" style="background:none;border:none;cursor:pointer;color:var(--ink4);font-size:14px;padding:4px;border-radius:4px;line-height:1" title="Delete">🗑</button>
         </div>
-        ${petChips ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${petChips}</div>` : ''}
-        ${l.message ? `<div style="font-size:12px;color:var(--ink3);background:var(--bg);padding:8px 10px;border-radius:6px;margin-bottom:10px;border:1px solid var(--border)">💬 ${l.message}</div>` : ''}
-        ${isPending ? `
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn-primary btn-sm" onclick="approveLead(${l.id})">✓ Add to Clients</button>
-          <button class="btn-ghost btn-sm" onclick="editLeadModal(${l.id})">✏️ Edit first</button>
-          <button class="btn-ghost btn-sm" style="color:var(--red);border-color:#fca5a5;margin-left:auto" onclick="dismissLead(${l.id})">✕ Dismiss</button>
-        </div>` : `<div style="font-size:12px;color:var(--ink4)">${l.status==='added'?'✓ Added to clients':'Dismissed'}</div>`}
       </div>
+
+      <div style="border-top:1px solid var(--border);padding:12px 16px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          ${l.phone   ? `<div style="font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:5px"><span>📞</span>${l.phone}</div>` : ''}
+          ${l.email   ? `<div style="font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:5px"><span>✉️</span>${l.email}</div>` : ''}
+        </div>
+        ${l.address   ? `<div style="font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:5px"><span>📍</span>${l.address}</div>` : ''}
+        ${l.message   ? `<div style="font-size:12px;color:var(--ink3);background:var(--bg);padding:8px 10px;border-radius:6px;border:1px solid var(--border);margin-top:2px">💬 ${l.message}</div>` : ''}
+      </div>
+
+      ${pets.length ? `<div style="border-top:1px solid var(--border);padding:0 16px 4px">${petRows}</div>` : ''}
+
+      ${isPending ? `
+      <div style="border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:8px;background:var(--bg);flex-wrap:wrap">
+        <button class="btn-primary btn-sm" onclick="approveLead(${l.id})" style="flex:1;justify-content:center">✓ Add to Clients</button>
+        <button class="btn-ghost btn-sm" onclick="editLeadModal(${l.id})">✏️ Edit first</button>
+        <button class="btn-ghost btn-sm" style="color:var(--red);border-color:#fca5a5" onclick="dismissLead(${l.id})">✕ Dismiss</button>
+      </div>` : ''}
     </div>`;
   }).join('');
 }
@@ -3184,6 +3208,20 @@ async function approveLead(id) {
   await loadLeads();
   showToast(`✅ ${name} added to clients!`);
   openProfile(name);
+}
+
+async function deleteLead(id) {
+  if (!confirm('Permanently delete this lead?')) return;
+  await fetch(`${SUPABASE_URL}/rest/v1/crm_leads?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  leadsData = leadsData.filter(l => l.id !== id);
+  renderLeads();
+  const pending = leadsData.filter(l => l.status === 'pending').length;
+  const badge = document.getElementById('leads-badge');
+  if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? 'inline-block' : 'none'; }
+  showToast('🗑 Lead deleted');
 }
 
 async function dismissLead(id) {
@@ -3283,7 +3321,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.56</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.57</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
