@@ -564,7 +564,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.54</div>
+      <div class="sidebar-version">Magic Touch v3.55</div>
     </div>
   </aside>
 
@@ -879,6 +879,11 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           oninput="ncAddressAutocomplete(this.value)"
           onblur="setTimeout(()=>document.getElementById('nc-addr-suggestions').style.display='none',200)">
         <div id="nc-addr-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:var(--r2);z-index:600;box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:200px;overflow-y:auto;margin-top:2px"></div>
+      </div>
+    </div>
+    <div id="nc-map-section" style="display:none;margin-bottom:10px">
+      <div style="height:140px;border-radius:var(--r2);overflow:hidden;border:1px solid var(--border)">
+        <iframe id="nc-map-iframe" style="width:100%;height:100%;border:none" src="about:blank"></iframe>
       </div>
     </div>
     <div class="form-group"><label>Suite / Apt / Unit / Office</label><input id="nc-suite" placeholder="e.g. Apt 2B, Suite 100, Unit 4"></div>
@@ -1811,7 +1816,13 @@ async function addPet() {
 
 // ── NEW CLIENT MODAL ──────────────────────────────────────────────────────
 function openNewClientModal() { document.getElementById('new-client-modal').classList.add('open'); }
-function closeNewClientModal() { document.getElementById('new-client-modal').classList.remove('open'); }
+function closeNewClientModal() {
+  document.getElementById('new-client-modal').classList.remove('open');
+  const s = document.getElementById('nc-map-section');
+  const f = document.getElementById('nc-map-iframe');
+  if (s) s.style.display = 'none';
+  if (f) f.src = 'about:blank';
+}
 function closeNewClientOutside(e) { if(e.target===document.getElementById('new-client-modal')) closeNewClientModal(); e.stopPropagation && e.stopPropagation(); }
 function updateNcPrice() {
   const s = document.getElementById('nc-species').value;
@@ -2965,6 +2976,14 @@ function ncSelectAddress(label, lat, lng) {
   geocodeCache[label] = {lat:parsedLat, lng:parsedLng};
   _lastSelectedCoords['nc-address'] = {lat:parsedLat, lng:parsedLng, base:label};
   document.getElementById('nc-addr-suggestions').style.display = 'none';
+  // Show mini map
+  const section = document.getElementById('nc-map-section');
+  const iframe  = document.getElementById('nc-map-iframe');
+  if (section && iframe) {
+    section.style.display = 'block';
+    const d = 0.007;
+    iframe.src = `https://www.openstreetmap.org/export/embed.html?bbox=${parsedLng-d},${parsedLat-d},${parsedLng+d},${parsedLat+d}&layer=mapnik&marker=${parsedLat},${parsedLng}`;
+  }
 }
 
 // ── MAP LOCATION SEARCH ───────────────────────────────────────────────────
@@ -3074,33 +3093,40 @@ function renderLeads() {
   el.innerHTML = leadsData.map(l => {
     const pets = l.pets || [];
     const name = `${l.first_name||''} ${l.last_name||''}`.trim();
-    const date = new Date(l.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
-    const statusColor = l.status==='pending' ? '#d97706' : l.status==='added' ? '#16a34a' : '#6b7280';
-    const statusBg   = l.status==='pending' ? '#fffbeb' : l.status==='added' ? '#f0fdf4' : '#f9fafb';
-    return `<div class="lead-card" id="lead-${l.id}" style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:10px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div class="avatar" style="width:42px;height:42px;border-radius:10px;font-size:14px">${initials(name||'?')}</div>
-          <div>
-            <div style="font-weight:700;font-size:14px;color:var(--ink)">${name}</div>
-            <div style="font-size:12px;color:var(--ink3);margin-top:1px">${date}</div>
-          </div>
+    const date = new Date(l.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const time = new Date(l.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    const isPending = l.status === 'pending';
+    const statusColor = isPending ? 'var(--amber)' : l.status==='added' ? 'var(--green)' : 'var(--ink4)';
+    const statusBg    = isPending ? 'var(--amber-bg)' : l.status==='added' ? 'var(--green-bg)' : 'var(--bg)';
+    const petChips = pets.map(p => {
+      const icon = p.petType?.toLowerCase().includes('cat') ? '🐈' : '🐕';
+      return `<span style="background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px">${icon} ${p.petName}${p.petWeight?' · '+p.petWeight+'lbs':''}</span>`;
+    }).join('');
+    return `<div id="lead-${l.id}" style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px;transition:box-shadow .15s">
+      <!-- Header -->
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">
+        <div class="avatar" style="width:40px;height:40px;border-radius:10px;font-size:13px;flex-shrink:0">${initials(name||'?')}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px;color:var(--ink)">${name}</div>
+          <div style="font-size:11px;color:var(--ink4);margin-top:1px">${date} at ${time}</div>
         </div>
-        <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${statusBg};color:${statusColor};border:1px solid ${statusColor}30">${l.status}</span>
+        <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${statusBg};color:${statusColor};border:1px solid ${statusColor};flex-shrink:0">${l.status}</span>
       </div>
-      <div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px 16px">
-        ${l.phone ? `<div style="font-size:12px;color:var(--ink3)">📞 ${l.phone}</div>` : ''}
-        ${l.email ? `<div style="font-size:12px;color:var(--ink3)">✉️ ${l.email}</div>` : ''}
-        ${l.address ? `<div style="font-size:12px;color:var(--ink3)">📍 ${l.address}</div>` : ''}
-        ${pets.length ? `<div style="font-size:12px;color:var(--ink3)">🐾 ${pets.map(p=>p.petName).join(', ')}</div>` : ''}
-      </div>
-      ${l.message ? `<div style="margin-top:8px;font-size:12px;color:var(--ink3);background:var(--bg);padding:8px 10px;border-radius:6px">💬 ${l.message}</div>` : ''}
-      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-        ${l.status==='pending' ? `
+      <!-- Body -->
+      <div style="padding:12px 16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-bottom:10px">
+          ${l.phone ? `<div style="font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:5px"><span style="color:var(--ink4)">📞</span>${l.phone}</div>` : ''}
+          ${l.email ? `<div style="font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:5px;overflow:hidden"><span style="color:var(--ink4)">✉️</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.email}</span></div>` : ''}
+          ${l.address ? `<div style="font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:5px;grid-column:1/-1"><span style="color:var(--ink4)">📍</span>${l.address}</div>` : ''}
+        </div>
+        ${petChips ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${petChips}</div>` : ''}
+        ${l.message ? `<div style="font-size:12px;color:var(--ink3);background:var(--bg);padding:8px 10px;border-radius:6px;margin-bottom:10px;border:1px solid var(--border)">💬 ${l.message}</div>` : ''}
+        ${isPending ? `
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-primary btn-sm" onclick="approveLead(${l.id})">✓ Add to Clients</button>
           <button class="btn-ghost btn-sm" onclick="editLeadModal(${l.id})">✏️ Edit first</button>
-          <button class="btn-ghost btn-sm" style="color:var(--red);border-color:#fca5a5" onclick="dismissLead(${l.id})">✕ Dismiss</button>
-        ` : `<span style="font-size:12px;color:var(--ink4)">${l.status==='added'?'✓ Added to clients':'Dismissed'}</span>`}
+          <button class="btn-ghost btn-sm" style="color:var(--red);border-color:#fca5a5;margin-left:auto" onclick="dismissLead(${l.id})">✕ Dismiss</button>
+        </div>` : `<div style="font-size:12px;color:var(--ink4)">${l.status==='added'?'✓ Added to clients':'Dismissed'}</div>`}
       </div>
     </div>`;
   }).join('');
@@ -3244,7 +3270,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.54</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.55</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
