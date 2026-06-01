@@ -564,7 +564,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.66</div>
+      <div class="sidebar-version">Magic Touch v3.67</div>
     </div>
   </aside>
 
@@ -3382,8 +3382,10 @@ function openLeadPanel(id) {
   }
 
   // Hide map initially, render if address available
-  document.getElementById('profile-map-section').style.display = 'none';
-  document.getElementById('map-directions-link').style.display = 'none';
+  const mapSec = document.getElementById('profile-map-section');
+  const mapLink = document.getElementById('map-directions-link');
+  if (mapSec) mapSec.style.display = 'none';
+  if (mapLink) mapLink.style.display = 'none';
 
   // Pets section — all pets, same style as client profile
   const petCardsEl = document.getElementById('p-pet-cards');
@@ -3490,7 +3492,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.66</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.67</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
