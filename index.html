@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.49</div>
+      <div class="sidebar-version">Magic Touch v3.50</div>
     </div>
   </aside>
 
@@ -2508,13 +2508,25 @@ function geocodeAddress(address, callback) {
   if (!address) { callback(null,null); return; }
   const cached = geocodeCache[address] || geocodeCache[address.trim()];
   if (cached) { callback(cached.lat, cached.lng); return; }
+  // Try Nominatim first, fall back to Google Geocoding if not found
   fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=us`, {headers:{'Accept-Language':'en'}})
   .then(r=>r.json())
   .then(data => {
     if (data && data[0]) {
       geocodeCache[address] = {lat:parseFloat(data[0].lat), lng:parseFloat(data[0].lon)};
       callback(parseFloat(data[0].lat), parseFloat(data[0].lon));
-    } else callback(null, null);
+    } else {
+      // Fallback: Google Geocoding REST (supports CORS)
+      return fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_KEY}`)
+        .then(r=>r.json())
+        .then(gd => {
+          if (gd.status==='OK' && gd.results[0]) {
+            const loc = gd.results[0].geometry.location;
+            geocodeCache[address] = {lat:loc.lat, lng:loc.lng};
+            callback(loc.lat, loc.lng);
+          } else callback(null, null);
+        });
+    }
   })
   .catch(() => callback(null, null));
 }
@@ -2839,7 +2851,30 @@ async function _fetchAddrs(val) {
       `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(val)}&limit=8&countrycodes=us&dedupe=1`,
       {headers:{'Accept-Language':'en'}}
     );
-    return res.json();
+    const data = await res.json();
+    if (data && data.length > 0) return data;
+    // Nominatim found nothing — fall back to Google Geocoding for suggestions
+    const gRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(val)}&key=${GOOGLE_MAPS_KEY}&components=country:US`);
+    const gData = await gRes.json();
+    if (gData.status !== 'OK') return [];
+    // Convert Google results to Nominatim-like format
+    return gData.results.map(r => {
+      const comps = {};
+      r.address_components.forEach(c => {
+        if (c.types.includes('street_number')) comps.house_number = c.long_name;
+        if (c.types.includes('route')) comps.road = c.long_name;
+        if (c.types.includes('locality')) comps.city = c.long_name;
+        if (c.types.includes('sublocality_level_1')) comps.suburb = c.long_name;
+        if (c.types.includes('administrative_area_level_1')) comps.state = c.short_name;
+        if (c.types.includes('postal_code')) comps.postcode = c.long_name;
+      });
+      return {
+        lat: r.geometry.location.lat,
+        lon: r.geometry.location.lng,
+        address: comps,
+        place_id: r.place_id
+      };
+    });
   } catch(e) { return []; }
 }
 
@@ -3060,7 +3095,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.49</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.50</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
