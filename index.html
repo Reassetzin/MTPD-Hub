@@ -564,7 +564,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.59</div>
+      <div class="sidebar-version">Magic Touch v3.60</div>
     </div>
   </aside>
 
@@ -936,6 +936,8 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
     </div>
     <div class="form-group"><label>Medical Notes</label><textarea id="nc-medical" rows="2" placeholder="Allergies, conditions, medications…"></textarea></div>
 
+    <div id="nc-additional-pets"></div>
+    <button class="btn-ghost btn-sm" onclick="event.stopPropagation();addNcExtraPet()" style="margin-bottom:12px;width:100%;justify-content:center">+ Add Another Pet</button>
     <div class="modal-actions">
       <button class="btn-ghost" onclick="event.stopPropagation();closeNewClientModal()">Cancel</button>
       <button class="btn-primary" onclick="event.stopPropagation();addNewClient()">Add Client</button>
@@ -1824,6 +1826,23 @@ function closeNewClientModal() {
   const f = document.getElementById('nc-map-iframe');
   if (s) s.style.display = 'none';
   if (f) f.src = 'about:blank';
+  // Clear all fields so next open is always fresh
+  ['nc-first','nc-last','nc-phone','nc-email','nc-address','nc-suite','nc-notes','nc-pet','nc-breed','nc-dob','nc-weightlbs','nc-medical'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['nc-contact-pref','nc-referral','nc-gender','nc-dental'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('nc-species').value = 'dog';
+  document.getElementById('nc-species-dog').classList.add('active');
+  document.getElementById('nc-species-cat').classList.remove('active');
+  const extraNote = document.getElementById('nc-extra-pets-note');
+  if (extraNote) extraNote.remove();
+  // Remove any dynamic extra pet rows
+  document.querySelectorAll('.nc-extra-pet-row').forEach(r => r.remove());
+  document.getElementById('new-client-modal').dataset.leadId = '';
+  const ageEl = document.getElementById('nc-age-display'); if (ageEl) ageEl.textContent = '';
+  const priceEl = document.getElementById('nc-price-display'); if (priceEl) priceEl.textContent = '';
 }
 function closeNewClientOutside(e) { if(e.target===document.getElementById('new-client-modal')) closeNewClientModal(); e.stopPropagation && e.stopPropagation(); }
 function updateNcPrice() {
@@ -1831,6 +1850,39 @@ function updateNcPrice() {
   const w = document.getElementById('nc-weightlbs').value;
   const el = document.getElementById('nc-price-display');
   if (el) el.textContent = (s==='cat'||w) ? `→ Suggested price: $${calcPrice(s,w)}` : '';
+}
+
+
+// Extra pets in new client modal
+let _ncExtraPets = [];
+function addNcExtraPet() {
+  const idx = _ncExtraPets.length;
+  _ncExtraPets.push({});
+  const container = document.getElementById('nc-additional-pets');
+  const div = document.createElement('div');
+  div.className = 'nc-extra-pet-row';
+  div.style.cssText = 'border:1px solid var(--border);border-radius:var(--r2);padding:12px;margin-bottom:10px;background:var(--bg)';
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:1px">Pet ${idx+2}</div>
+      <button type="button" onclick="this.closest('.nc-extra-pet-row').remove()" style="background:none;border:none;cursor:pointer;color:var(--ink4);font-size:13px">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button type="button" class="species-btn active" onclick="this.classList.add('active');this.nextElementSibling.classList.remove('active');this.closest('.nc-extra-pet-row').querySelector('.ep-species').value='dog'">🐕 Dog</button>
+      <button type="button" class="species-btn" onclick="this.classList.add('active');this.previousElementSibling.classList.remove('active');this.closest('.nc-extra-pet-row').querySelector('.ep-species').value='cat'">🐈 Cat</button>
+      <input type="hidden" class="ep-species" value="dog">
+    </div>
+    <div class="form-row" style="margin-bottom:8px">
+      <div class="form-group"><label>Pet Name</label><input class="ep-name" placeholder="Name"></div>
+      <div class="form-group"><label>Breed</label><input class="ep-breed" placeholder="e.g. Labrador"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Gender</label>
+        <select class="ep-gender"><option value="">—</option><option>Male</option><option>Female</option></select>
+      </div>
+      <div class="form-group"><label>Weight (lbs)</label><input class="ep-weight" type="number" placeholder="e.g. 25"></div>
+    </div>`;
+  container.appendChild(div);
 }
 
 async function addNewClient() {
@@ -1851,21 +1903,33 @@ async function addNewClient() {
   clientExtra[fullName].referral    = document.getElementById('nc-referral').value;
   clientExtra[fullName].notes       = document.getElementById('nc-notes').value.trim();
 
-  // Pet
-  const petName = document.getElementById('nc-pet').value.trim();
+  // Primary pet
+  if (!clientExtra[fullName].petExtras) clientExtra[fullName].petExtras = {};
+  const petName = normalizeName(document.getElementById('nc-pet').value.trim());
   if (petName) {
     BASE_APPTS[fullName].pets[petName] = [];
-    if (!clientExtra[fullName].petExtras) clientExtra[fullName].petExtras = {};
     clientExtra[fullName].petExtras[petName] = {
-      species:    document.getElementById('nc-species').value || 'dog',
-      gender:     document.getElementById('nc-gender').value,
-      breed:      document.getElementById('nc-breed').value.trim(),
-      dob:        document.getElementById('nc-dob').value,
-      weightlbs:  document.getElementById('nc-weightlbs').value,
-      dental:     document.getElementById('nc-dental').value,
-      medical:    document.getElementById('nc-medical').value.trim(),
+      species:   document.getElementById('nc-species').value || 'dog',
+      gender:    document.getElementById('nc-gender').value,
+      breed:     normalizeName(document.getElementById('nc-breed').value.trim()),
+      dob:       document.getElementById('nc-dob').value,
+      weightlbs: document.getElementById('nc-weightlbs').value,
+      dental:    document.getElementById('nc-dental').value,
+      medical:   document.getElementById('nc-medical').value.trim(),
     };
   }
+  // Additional pets
+  document.querySelectorAll('.nc-extra-pet-row').forEach(row => {
+    const eName = normalizeName(row.querySelector('.ep-name')?.value.trim()||'');
+    if (!eName) return;
+    BASE_APPTS[fullName].pets[eName] = [];
+    clientExtra[fullName].petExtras[eName] = {
+      species:   row.querySelector('.ep-species')?.value || 'dog',
+      gender:    row.querySelector('.ep-gender')?.value || '',
+      breed:     normalizeName(row.querySelector('.ep-breed')?.value.trim()||''),
+      weightlbs: row.querySelector('.ep-weight')?.value || '',
+    };
+  });
 
   try {
     await saveExtra(fullName);
@@ -1888,18 +1952,6 @@ async function addNewClient() {
   showToast(`✅ ${fullName} added!`);
   openProfile(fullName);
 
-  // Reset form
-  ['nc-first','nc-last','nc-phone','nc-email','nc-address','nc-suite','nc-notes','nc-pet','nc-breed','nc-dob','nc-weightlbs','nc-medical'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  ['nc-contact-pref','nc-referral','nc-gender','nc-dental'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  document.getElementById('nc-species').value = 'dog';
-  document.getElementById('nc-species-dog').classList.add('active');
-  document.getElementById('nc-species-cat').classList.remove('active');
-  const ageEl = document.getElementById('nc-age-display'); if (ageEl) ageEl.textContent = '';
-  const priceEl = document.getElementById('nc-price-display'); if (priceEl) priceEl.textContent = '';
 }
 
 // ── TAGGING SYSTEM ────────────────────────────────────────────────────────
@@ -3117,7 +3169,7 @@ function renderLeads() {
       }).join('');
 
       return `
-      <div class="client-card" id="lead-${l.id}" onclick="openLeadPanel(${l.id})" style="cursor:pointer">
+      <div class="client-card" id="lead-${l.id}" onclick="openLeadPanel(${l.id})" style="cursor:pointer" role="button">
         <div class="client-card-header">
           <div class="avatar">${initials(name||'?')}</div>
           <div style="flex:1;min-width:0">
@@ -3134,11 +3186,11 @@ function renderLeads() {
         </div>
         <div class="client-card-footer" style="gap:6px;flex-wrap:wrap">
           ${isPending ? `
-            <button class="btn-primary btn-sm" onclick="approveLead(${l.id})">✓ Add</button>
-            <button class="btn-ghost btn-sm" onclick="editLeadModal(${l.id})">✏️ Edit</button>
-            <button class="btn-ghost btn-sm" style="color:var(--red);border-color:#fca5a5" onclick="dismissLead(${l.id})">✕</button>
+            <button class="btn-primary btn-sm" onclick="event.stopPropagation();approveLead(${l.id})">✓ Add</button>
+            <button class="btn-ghost btn-sm" onclick="event.stopPropagation();editLeadModal(${l.id})">✏️ Edit</button>
+            <button class="btn-ghost btn-sm" style="color:var(--red);border-color:#fca5a5" onclick="event.stopPropagation();dismissLead(${l.id})">✕</button>
           ` : `<span style="font-size:11px;color:var(--ink4)">${isAdded?'✓ Added to clients':'Dismissed'}</span>`}
-          <button onclick="deleteLead(${l.id})" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--ink4);font-size:13px;padding:2px 4px" title="Delete">🗑</button>
+          <button onclick="event.stopPropagation();deleteLead(${l.id})" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--ink4);font-size:13px;padding:2px 4px" title="Delete">🗑</button>
         </div>
       </div>`;
     }).join('')}
@@ -3331,24 +3383,35 @@ function openLeadPanel(id) {
   document.getElementById('profile-map-section').style.display = 'none';
   document.getElementById('map-directions-link').style.display = 'none';
 
-  // Pets section
+  // Pets section — all pets, same style as client profile
   const petCardsEl = document.getElementById('p-pet-cards');
   petCardsEl.innerHTML = pets.map(p => {
     const isCat = p.petType?.toLowerCase().includes('cat');
-    const details = [
-      normalizeName(p.petBreed||''),
-      normalizeSex(p.petSex||''),
-      p.petWeight ? p.petWeight+'lbs' : '',
-      p.petBirthdate || ''
-    ].filter(Boolean).join(' · ');
+    const pName = normalizeName(p.petName||'');
+    const breed = normalizeName(p.petBreed||'');
+    const gender = normalizeSex(p.petSex||'');
+    const weight = p.petWeight || '';
+    const dob    = p.petBirthdate || '';
     const medical = p.medicalConditions && p.medicalConditions !== 'No, healthy!' ? p.medicalConditions : '';
+    const subParts = [breed, gender, weight?weight+'lbs':'', dob].filter(Boolean);
     return `<div class="pet-card">
-      <div class="pet-card-header" style="cursor:default">
+      <div class="pet-card-header" onclick="togglePet(this)">
         <span class="pet-icon">${isCat?'🐈':'🐕'}</span>
-        <div><div class="pet-card-name">${normalizeName(p.petName||'')}</div>
-        <div class="pet-card-sub">${details}</div></div>
+        <div style="flex:1">
+          <div class="pet-card-name">${pName}</div>
+          <div class="pet-card-sub">${subParts.join(' · ')||'No details'}</div>
+        </div>
+        <span class="pet-toggle">▼</span>
       </div>
-      ${medical?`<div class="pet-card-body" style="padding:8px 14px"><div style="font-size:12px;color:var(--red)">⚠️ ${medical}</div></div>`:''}
+      <div class="pet-card-body" style="display:none">
+        <div class="pet-field-grid" style="margin-top:10px">
+          <div class="field-group"><label>Breed</label><input class="field-input" value="${breed}" readonly></div>
+          <div class="field-group"><label>Gender</label><input class="field-input" value="${gender}" readonly></div>
+          <div class="field-group"><label>Weight (lbs)</label><input class="field-input" value="${weight}" readonly></div>
+          <div class="field-group"><label>Birthdate</label><input class="field-input" value="${dob}" readonly></div>
+          ${medical?`<div class="field-group field-full"><label>Medical</label><input class="field-input" value="${medical}" readonly style="color:var(--red)"></div>`:''}
+        </div>
+      </div>
     </div>`;
   }).join('') || '<div style="font-size:13px;color:var(--ink4)">No pets listed</div>';
 
@@ -3425,7 +3488,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.59</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.60</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
