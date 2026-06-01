@@ -564,7 +564,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.58</div>
+      <div class="sidebar-version">Magic Touch v3.59</div>
     </div>
   </aside>
 
@@ -1462,6 +1462,8 @@ function openProfile(name) {
   renderPetCards(name, cd, ex);
   renderTimeline(name, cd);
   renderMap(ex.address || '');
+  // Auto-load map even for existing saved address
+  if (ex.address && (ex.lat || geocodeCache[ex.address])) renderMap(ex.address);
   document.getElementById('profile-overlay').classList.add('open');
 }
 
@@ -1835,7 +1837,7 @@ async function addNewClient() {
   const first = document.getElementById('nc-first').value.trim();
   const last  = document.getElementById('nc-last').value.trim();
   if (!first) { showToast('⚠️ First name required'); return; }
-  const fullName = last ? `${first} ${last}` : first;
+  const fullName = last ? `${normalizeName(first)} ${normalizeName(last)}` : normalizeName(first);
 
   if (!BASE_APPTS[fullName]) BASE_APPTS[fullName] = {pets:{},total_spent:0,visits:0};
   if (!clientExtra[fullName]) clientExtra[fullName] = {};
@@ -3098,7 +3100,7 @@ function renderLeads() {
     <div class="client-grid">
     ${leadsData.map(l => {
       const pets = l.pets || [];
-      const name = `${l.first_name||''} ${l.last_name||''}`.trim();
+      const name = normalizeName(`${l.first_name||''} ${l.last_name||''}`.trim());
       const date = new Date(l.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
       const isPending = l.status === 'pending';
       const isAdded   = l.status === 'added';
@@ -3115,7 +3117,7 @@ function renderLeads() {
       }).join('');
 
       return `
-      <div class="client-card" id="lead-${l.id}">
+      <div class="client-card" id="lead-${l.id}" onclick="openLeadPanel(${l.id})" style="cursor:pointer">
         <div class="client-card-header">
           <div class="avatar">${initials(name||'?')}</div>
           <div style="flex:1;min-width:0">
@@ -3231,6 +3233,30 @@ function editLeadModal(id) {
   document.getElementById('nc-email').value = lead.email || '';
   document.getElementById('nc-address').value = lead.address || '';
   document.getElementById('nc-suite').value = '';
+  // Auto-show map if address has known coords
+  if (lead.address) {
+    const coords = geocodeCache[lead.address];
+    if (coords) {
+      const sec = document.getElementById('nc-map-section');
+      const frm = document.getElementById('nc-map-iframe');
+      if (sec && frm) {
+        sec.style.display = 'block';
+        const d = 0.007;
+        frm.src = `https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng-d},${coords.lat-d},${coords.lng+d},${coords.lat+d}&layer=mapnik&marker=${coords.lat},${coords.lng}`;
+      }
+    } else {
+      geocodeAddress(lead.address, (lat, lng) => {
+        if (!lat) return;
+        const sec = document.getElementById('nc-map-section');
+        const frm = document.getElementById('nc-map-iframe');
+        if (sec && frm) {
+          sec.style.display = 'block';
+          const d = 0.007;
+          frm.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lng-d},${lat-d},${lng+d},${lat+d}&layer=mapnik&marker=${lat},${lng}`;
+        }
+      });
+    }
+  }
   const pets = lead.pets || [];
   if (pets[0]) {
     document.getElementById('nc-pet').value = normalizeName(pets[0].petName || '');
@@ -3238,13 +3264,104 @@ function editLeadModal(id) {
     document.getElementById('nc-weightlbs').value = pets[0].petWeight || '';
     document.getElementById('nc-dob').value = '';
     document.getElementById('nc-gender').value = normalizeSex(pets[0].petSex || '');
+    document.getElementById('nc-medical').value = pets[0].medicalConditions || '';
     const isCat = pets[0].petType?.toLowerCase().includes('cat');
     document.getElementById('nc-species').value = isCat ? 'cat' : 'dog';
     document.getElementById('nc-species-dog').classList.toggle('active', !isCat);
     document.getElementById('nc-species-cat').classList.toggle('active', isCat);
   }
+  // Show note about additional pets if more than one
+  const extraPetsNote = document.getElementById('nc-extra-pets-note');
+  if (extraPetsNote) extraPetsNote.remove();
+  if (pets.length > 1) {
+    const note = document.createElement('div');
+    note.id = 'nc-extra-pets-note';
+    note.style.cssText = 'font-size:12px;color:var(--amber);background:var(--amber-bg);border:1px solid var(--amber-border);padding:8px 12px;border-radius:var(--r2);margin-bottom:10px';
+    note.innerHTML = `⚠️ This client has <strong>${pets.length} pets</strong>. Only the first is shown below. After adding, open their profile to add the remaining pets:<br>${pets.slice(1).map(p=>`• ${normalizeName(p.petName||'')} (${p.petType||''})`).join('<br>')}`;
+    document.getElementById('new-client-modal').querySelector('.modal').insertBefore(
+      note,
+      document.getElementById('new-client-modal').querySelector('[style*="border-top"]')
+    );
+  }
   document.getElementById('new-client-modal').dataset.leadId = id;
   openNewClientModal();
+}
+
+
+// ── LEAD PANEL (click to view) ────────────────────────────────────────────
+function openLeadPanel(id) {
+  const lead = leadsData.find(l => l.id === id);
+  if (!lead) return;
+  const name = normalizeName(`${lead.first_name||''} ${lead.last_name||''}`.trim());
+  const pets = lead.pets || [];
+
+  // Populate profile panel with lead data (read-only view)
+  document.getElementById('p-avatar').textContent = initials(name||'?');
+  document.getElementById('p-name').textContent = name;
+  document.getElementById('p-sub').textContent = `${pets.length} pet${pets.length!==1?'s':''} · Lead`;
+  document.getElementById('p-visits').textContent = '—';
+  document.getElementById('p-spent').textContent = '—';
+  document.getElementById('p-pets-count').textContent = pets.length;
+  document.getElementById('p-last').textContent = new Date(lead.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+
+  // Contact fields
+  document.getElementById('f-phone').value = lead.phone || '';
+  document.getElementById('f-email').value = lead.email || '';
+  document.getElementById('f-address').value = lead.address || '';
+  document.getElementById('f-suite').value = '';
+  document.getElementById('f-notes').value = lead.message || '';
+  document.getElementById('f-contact-pref').value = '';
+  document.getElementById('f-referral').value = '';
+
+  // Replace action buttons with lead actions
+  const actionRow = document.querySelector('.action-row');
+  if (actionRow) {
+    actionRow.innerHTML = lead.status === 'pending' ? `
+      <button class="btn-primary" onclick="approveLead(${id});closeProfile()">✓ Add to Clients</button>
+      <button class="btn-ghost" onclick="closeProfile();editLeadModal(${id})">✏️ Edit & Add</button>
+      <button class="btn-ghost" onclick="dismissLead(${id});closeProfile()" style="color:var(--red);border-color:#fca5a5">✕ Dismiss</button>
+      <button class="btn-ghost btn-sm" onclick="deleteLead(${id});closeProfile()" style="margin-left:auto;color:var(--ink4)" title="Delete">🗑</button>
+    ` : `
+      <span style="font-size:13px;color:var(--ink3)">${lead.status==='added'?'✓ Already added to clients':'Dismissed'}</span>
+      <button class="btn-ghost btn-sm" onclick="deleteLead(${id});closeProfile()" style="margin-left:auto;color:var(--red);border-color:#fca5a5">🗑 Delete</button>
+    `;
+  }
+
+  // Hide map initially, render if address available
+  document.getElementById('profile-map-section').style.display = 'none';
+  document.getElementById('map-directions-link').style.display = 'none';
+
+  // Pets section
+  const petCardsEl = document.getElementById('p-pet-cards');
+  petCardsEl.innerHTML = pets.map(p => {
+    const isCat = p.petType?.toLowerCase().includes('cat');
+    const details = [
+      normalizeName(p.petBreed||''),
+      normalizeSex(p.petSex||''),
+      p.petWeight ? p.petWeight+'lbs' : '',
+      p.petBirthdate || ''
+    ].filter(Boolean).join(' · ');
+    const medical = p.medicalConditions && p.medicalConditions !== 'No, healthy!' ? p.medicalConditions : '';
+    return `<div class="pet-card">
+      <div class="pet-card-header" style="cursor:default">
+        <span class="pet-icon">${isCat?'🐈':'🐕'}</span>
+        <div><div class="pet-card-name">${normalizeName(p.petName||'')}</div>
+        <div class="pet-card-sub">${details}</div></div>
+      </div>
+      ${medical?`<div class="pet-card-body" style="padding:8px 14px"><div style="font-size:12px;color:var(--red)">⚠️ ${medical}</div></div>`:''}
+    </div>`;
+  }).join('') || '<div style="font-size:13px;color:var(--ink4)">No pets listed</div>';
+
+  // Timeline — empty for leads
+  document.getElementById('p-timeline').innerHTML = '<div style="font-size:13px;color:var(--ink4)">No appointment history yet</div>';
+
+  // Store null so save doesn't try to save as regular client
+  openClientName = null;
+
+  // Show map if address has coords
+  if (lead.address) renderMap(lead.address);
+
+  document.getElementById('profile-overlay').classList.add('open');
 }
 
 async function init() {
@@ -3308,7 +3425,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.58</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.59</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
