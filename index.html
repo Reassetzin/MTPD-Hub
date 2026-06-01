@@ -2900,12 +2900,15 @@ function _buildAddrHTML(data, fn) {
 let _addrTimer = null;
 function addressAutocomplete(val) {
   const box = document.getElementById('addr-suggestions');
-  if (!val || val.length < 4) { box.style.display='none'; return; }
+  if (!val || val.length < 3) { box.style.display='none'; return; }
   clearTimeout(_addrTimer);
   _addrTimer = setTimeout(async () => {
     try {
+      box.innerHTML = '<div class="addr-option" style="color:var(--ink4)">Searching…</div>';
+      box.style.display = 'block';
       const data = await _fetchAddrs(val);
-      box.innerHTML = _buildAddrHTML(data, 'selectAddress');
+      if (!data.length) { box.style.display='none'; return; }
+      box.innerHTML = await _buildAddrHTMLGoogle(data, 'selectAddress');
       box.style.display = box.innerHTML ? 'block' : 'none';
     } catch(e) { box.style.display='none'; }
   }, 350);
@@ -2985,12 +2988,15 @@ function clearMapLocationPin() {
 let _ncAddrTimer = null;
 function ncAddressAutocomplete(val) {
   const box = document.getElementById('nc-addr-suggestions');
-  if (!val || val.length < 4) { box.style.display='none'; return; }
+  if (!val || val.length < 3) { box.style.display='none'; return; }
   clearTimeout(_ncAddrTimer);
   _ncAddrTimer = setTimeout(async () => {
     try {
+      box.innerHTML = '<div class="addr-option" style="color:var(--ink4)">Searching…</div>';
+      box.style.display = 'block';
       const data = await _fetchAddrs(val);
-      box.innerHTML = _buildAddrHTML(data, 'ncSelectAddress');
+      if (!data.length) { box.style.display='none'; return; }
+      box.innerHTML = await _buildAddrHTMLGoogle(data, 'ncSelectAddress');
       box.style.display = box.innerHTML ? 'block' : 'none';
     } catch(e) { box.style.display='none'; }
   }, 350);
