@@ -564,7 +564,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.64</div>
+      <div class="sidebar-version">Magic Touch v3.65</div>
     </div>
   </aside>
 
@@ -3135,32 +3135,13 @@ async function loadLeads() {
   });
   leadsData = await res.json();
   renderLeads();
-  _setupLeadClicks();
   const pending = leadsData.filter(l => l.status === 'pending').length;
   const badge = document.getElementById('leads-badge');
   if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? 'inline-block' : 'none'; }
 }
 
 // Event delegation for lead cards
-function _setupLeadClicks() {
-  document.getElementById('leads-list').addEventListener('click', function(e) {
-    const btn = e.target.closest('[data-action]');
-    if (btn) {
-      e.stopPropagation();
-      const id = parseInt(btn.dataset.id);
-      const action = btn.dataset.action;
-      if (action === 'approve') approveLead(id);
-      else if (action === 'dismiss') dismissLead(id);
-      else if (action === 'delete') deleteLead(id);
-      return;
-    }
-    const card = e.target.closest('.lead-card-item');
-    if (card) {
-      const id = parseInt(card.dataset.leadId);
-      if (id) openLeadPanel(id);
-    }
-  });
-}
+
 
 function renderLeads() {
   const el = document.getElementById('leads-list');
@@ -3190,7 +3171,7 @@ function renderLeads() {
       }).join('');
 
       return `
-      <div class="client-card lead-card-item" data-lead-id="${l.id}" style="cursor:pointer">
+      <div class="client-card" style="cursor:pointer" onclick="openLeadPanel(${l.id})">
         <div class="client-card-header">
           <div class="avatar">${initials(name||'?')}</div>
           <div style="flex:1;min-width:0">
@@ -3207,10 +3188,10 @@ function renderLeads() {
         </div>
         <div class="client-card-footer" style="gap:6px;flex-wrap:wrap">
           ${isPending ? `
-            <button class="btn-primary btn-sm" data-action="approve" data-id="${l.id}">✓ Add</button>
-            <button class="btn-ghost btn-sm" data-action="dismiss" data-id="${l.id}" style="color:var(--red);border-color:#fca5a5">✕ Dismiss</button>
+            <button class="btn-primary btn-sm" onclick="event.stopPropagation();approveLead(${l.id})">✓ Add</button>
+            <button class="btn-ghost btn-sm" onclick="event.stopPropagation();dismissLead(${l.id})" style="color:var(--red);border-color:#fca5a5">✕ Dismiss</button>
           ` : `<span style="font-size:11px;color:var(--ink4)">${isAdded?'✓ Added to clients':'Dismissed'}</span>`}
-          <button data-action="delete" data-id="${l.id}" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--ink4);font-size:13px;padding:2px 4px" title="Delete">🗑</button>
+          <button onclick="event.stopPropagation();deleteLead(${l.id})" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--ink4);font-size:13px;padding:2px 4px" title="Delete">🗑</button>
         </div>
       </div>`;
     }).join('')}
@@ -3507,7 +3488,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.64</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.65</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
