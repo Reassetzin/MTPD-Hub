@@ -564,7 +564,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.55</div>
+      <div class="sidebar-version">Magic Touch v3.56</div>
     </div>
   </aside>
 
@@ -3132,10 +3132,25 @@ function renderLeads() {
   }).join('');
 }
 
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function normalizeSex(s) {
+  if (!s) return '';
+  const lower = s.toLowerCase();
+  if (lower.includes('male') && (lower.includes('neuter') || lower.includes('castrat'))) return 'Male';
+  if (lower.includes('female') && (lower.includes('spay') || lower.includes('spayed'))) return 'Female';
+  if (lower.includes('female')) return 'Female';
+  if (lower.includes('male')) return 'Male';
+  return capitalize(s);
+}
+function normalizeName(s) {
+  if (!s) return '';
+  return s.split(' ').map(w => capitalize(w.toLowerCase())).join(' ');
+}
+
 async function approveLead(id) {
   const lead = leadsData.find(l => l.id === id);
   if (!lead) return;
-  const name = `${lead.first_name||''} ${lead.last_name||''}`.trim();
+  const name = `${normalizeName(lead.first_name||'')} ${normalizeName(lead.last_name||'')}`.trim();
   // Create client
   if (!BASE_APPTS[name]) BASE_APPTS[name] = {pets:{},total_spent:0,visits:0};
   if (!clientExtra[name]) clientExtra[name] = {};
@@ -3145,14 +3160,14 @@ async function approveLead(id) {
   // Add pets
   const pets = lead.pets || [];
   pets.forEach(p => {
-    const petName = p.petName;
+    const petName = normalizeName(p.petName);
     if (!petName) return;
     BASE_APPTS[name].pets[petName] = [];
     if (!clientExtra[name].petExtras) clientExtra[name].petExtras = {};
     clientExtra[name].petExtras[petName] = {
       species: p.petType?.toLowerCase().includes('cat') ? 'cat' : 'dog',
-      gender: p.petSex || '',
-      breed: p.petBreed || '',
+      gender: normalizeSex(p.petSex),
+      breed: normalizeName(p.petBreed),
       dob: p.petBirthdate || '',
       weightlbs: p.petWeight || '',
       medical: p.medicalConditions || '',
@@ -3185,26 +3200,24 @@ async function dismissLead(id) {
 function editLeadModal(id) {
   const lead = leadsData.find(l => l.id === id);
   if (!lead) return;
-  // Pre-fill the new client modal with lead data
-  document.getElementById('nc-first').value = lead.first_name || '';
-  document.getElementById('nc-last').value  = lead.last_name  || '';
+  document.getElementById('nc-first').value = normalizeName(lead.first_name || '');
+  document.getElementById('nc-last').value  = normalizeName(lead.last_name  || '');
   document.getElementById('nc-phone').value = lead.phone || '';
   document.getElementById('nc-email').value = lead.email || '';
   document.getElementById('nc-address').value = lead.address || '';
   document.getElementById('nc-suite').value = '';
   const pets = lead.pets || [];
   if (pets[0]) {
-    document.getElementById('nc-pet').value = pets[0].petName || '';
-    document.getElementById('nc-breed').value = pets[0].petBreed || '';
+    document.getElementById('nc-pet').value = normalizeName(pets[0].petName || '');
+    document.getElementById('nc-breed').value = normalizeName(pets[0].petBreed || '');
     document.getElementById('nc-weightlbs').value = pets[0].petWeight || '';
     document.getElementById('nc-dob').value = '';
-    document.getElementById('nc-gender').value = pets[0].petSex || '';
+    document.getElementById('nc-gender').value = normalizeSex(pets[0].petSex || '');
     const isCat = pets[0].petType?.toLowerCase().includes('cat');
     document.getElementById('nc-species').value = isCat ? 'cat' : 'dog';
     document.getElementById('nc-species-dog').classList.toggle('active', !isCat);
     document.getElementById('nc-species-cat').classList.toggle('active', isCat);
   }
-  // Store lead id so we can mark it as added after saving
   document.getElementById('new-client-modal').dataset.leadId = id;
   openNewClientModal();
 }
@@ -3270,7 +3283,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.55</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.56</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
