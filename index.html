@@ -564,7 +564,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.61</div>
+      <div class="sidebar-version">Magic Touch v3.62</div>
     </div>
   </aside>
 
@@ -3207,8 +3207,7 @@ function renderLeads() {
         <div class="client-card-footer" style="gap:6px;flex-wrap:wrap">
           ${isPending ? `
             <button class="btn-primary btn-sm" data-action="approve" data-id="${l.id}">✓ Add</button>
-            <button class="btn-ghost btn-sm" data-action="edit" data-id="${l.id}">✏️ Edit</button>
-            <button class="btn-ghost btn-sm" style="color:var(--red);border-color:#fca5a5" data-action="dismiss" data-id="${l.id}">✕</button>
+            <button class="btn-ghost btn-sm" data-action="dismiss" data-id="${l.id}" style="color:var(--red);border-color:#fca5a5">✕ Dismiss</button>
           ` : `<span style="font-size:11px;color:var(--ink4)">${isAdded?'✓ Added to clients':'Dismissed'}</span>`}
           <button data-action="delete" data-id="${l.id}" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--ink4);font-size:13px;padding:2px 4px" title="Delete">🗑</button>
         </div>
@@ -3390,9 +3389,8 @@ function openLeadPanel(id) {
   if (actionRow) {
     actionRow.innerHTML = lead.status === 'pending' ? `
       <button class="btn-primary" onclick="approveLead(${id});closeProfile()">✓ Add to Clients</button>
-      <button class="btn-ghost" onclick="closeProfile();editLeadModal(${id})">✏️ Edit & Add</button>
       <button class="btn-ghost" onclick="dismissLead(${id});closeProfile()" style="color:var(--red);border-color:#fca5a5">✕ Dismiss</button>
-      <button class="btn-ghost btn-sm" onclick="deleteLead(${id});closeProfile()" style="margin-left:auto;color:var(--ink4)" title="Delete">🗑</button>
+      <button class="btn-ghost btn-sm" onclick="deleteLead(${id});closeProfile()" style="margin-left:auto;color:var(--ink4)">🗑</button>
     ` : `
       <span style="font-size:13px;color:var(--ink3)">${lead.status==='added'?'✓ Already added to clients':'Dismissed'}</span>
       <button class="btn-ghost btn-sm" onclick="deleteLead(${id});closeProfile()" style="margin-left:auto;color:var(--red);border-color:#fca5a5">🗑 Delete</button>
@@ -3419,17 +3417,17 @@ function openLeadPanel(id) {
         <span class="pet-icon">${isCat?'🐈':'🐕'}</span>
         <div style="flex:1">
           <div class="pet-card-name">${pName}</div>
-          <div class="pet-card-sub">${subParts.join(' · ')||'No details'}</div>
+          <div class="pet-card-sub">${subParts.join(' · ')||'No details yet'}</div>
         </div>
-        <span class="pet-toggle">▼</span>
+        <span class="pet-toggle">▲</span>
       </div>
-      <div class="pet-card-body" style="display:none">
+      <div class="pet-card-body">
         <div class="pet-field-grid" style="margin-top:10px">
           <div class="field-group"><label>Breed</label><input class="field-input" value="${breed}" readonly></div>
           <div class="field-group"><label>Gender</label><input class="field-input" value="${gender}" readonly></div>
           <div class="field-group"><label>Weight (lbs)</label><input class="field-input" value="${weight}" readonly></div>
           <div class="field-group"><label>Birthdate</label><input class="field-input" value="${dob}" readonly></div>
-          ${medical?`<div class="field-group field-full"><label>Medical</label><input class="field-input" value="${medical}" readonly style="color:var(--red)"></div>`:''}
+          ${medical?`<div class="field-group field-full"><label>Medical Notes</label><input class="field-input" value="${medical}" readonly style="color:var(--red)"></div>`:''}
         </div>
       </div>
     </div>`;
@@ -3508,7 +3506,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.61</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.62</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
