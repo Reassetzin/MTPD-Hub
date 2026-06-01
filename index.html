@@ -564,7 +564,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.62</div>
+      <div class="sidebar-version">Magic Touch v3.63</div>
     </div>
   </aside>
 
@@ -3141,24 +3141,26 @@ async function loadLeads() {
   if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? 'inline-block' : 'none'; }
 }
 
-// Event delegation for lead cards — handles clicks on card and buttons
-document.addEventListener('click', function(e) {
-  const btn = e.target.closest('[data-action]');
-  if (btn) {
-    e.stopPropagation();
-    const id = parseInt(btn.dataset.id);
-    const action = btn.dataset.action;
-    if (action === 'approve') approveLead(id);
-    else if (action === 'edit') editLeadModal(id);
-    else if (action === 'dismiss') dismissLead(id);
-    else if (action === 'delete') deleteLead(id);
-    return;
-  }
-  const card = e.target.closest('.lead-card-item');
-  if (card) {
-    const id = parseInt(card.dataset.leadId);
-    if (id) openLeadPanel(id);
-  }
+// Event delegation for lead cards
+document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action]');
+    if (btn) {
+      e.stopPropagation();
+      const id = parseInt(btn.dataset.id);
+      const action = btn.dataset.action;
+      if (action === 'approve') approveLead(id);
+      else if (action === 'edit') editLeadModal(id);
+      else if (action === 'dismiss') dismissLead(id);
+      else if (action === 'delete') deleteLead(id);
+      return;
+    }
+    const card = e.target.closest('.lead-card-item');
+    if (card) {
+      const id = parseInt(card.dataset.leadId);
+      if (id) openLeadPanel(id);
+    }
+  });
 });
 
 function renderLeads() {
@@ -3506,7 +3508,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.62</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.63</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
