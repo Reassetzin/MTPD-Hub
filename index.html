@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.51</div>
+      <div class="sidebar-version">Magic Touch v3.52</div>
     </div>
   </aside>
 
@@ -1008,7 +1008,6 @@ const BASE_APPTS = {}; // All data loaded from Supabase
 
 // ── SUPABASE CONFIG ────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://nuvpqmnizwgdhhfqxozl.supabase.co';
-const GOOGLE_MAPS_KEY = 'AIzaSyD1kVlk261T6Dj4VgZfK2pgtItmT5sgd4g';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51dnBxbW5pendnZGhoZnF4b3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NTUyNzQsImV4cCI6MjA5NDIzMTI3NH0.h0-FaqjAoap9rcm4Y2T9TNXurVgmDhwuYCfeFPLZXNA';
 
 const sb = {
@@ -2507,27 +2506,17 @@ function updateMapSidebar(clients) {
 // Geocoding — OpenStreetMap Nominatim, no API key
 function geocodeAddress(address, callback) {
   if (!address) { callback(null,null); return; }
-  const cached = geocodeCache[address] || geocodeCache[address.trim()];
-  if (cached) { callback(cached.lat, cached.lng); return; }
-  // Try Nominatim first, fall back to Google Geocoding if not found
-  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=us`, {headers:{'Accept-Language':'en'}})
+  if (geocodeCache[address]) { callback(geocodeCache[address].lat, geocodeCache[address].lng); return; }
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`, {
+    headers: {'Accept-Language':'en'}
+  })
   .then(r=>r.json())
   .then(data => {
     if (data && data[0]) {
-      geocodeCache[address] = {lat:parseFloat(data[0].lat), lng:parseFloat(data[0].lon)};
-      callback(parseFloat(data[0].lat), parseFloat(data[0].lon));
-    } else {
-      // Fallback: Google Geocoding REST (supports CORS)
-      return fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_KEY}`)
-        .then(r=>r.json())
-        .then(gd => {
-          if (gd.status==='OK' && gd.results[0]) {
-            const loc = gd.results[0].geometry.location;
-            geocodeCache[address] = {lat:loc.lat, lng:loc.lng};
-            callback(loc.lat, loc.lng);
-          } else callback(null, null);
-        });
-    }
+      const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+      geocodeCache[address] = {lat, lng};
+      callback(lat, lng);
+    } else callback(null, null);
   })
   .catch(() => callback(null, null));
 }
@@ -2833,49 +2822,38 @@ Object.entries(KNOWN_COORDS).forEach(([addr, coords]) => { geocodeCache[addr] = 
 // ── ADDRESS AUTOCOMPLETE ──────────────────────────────────────────────────
 const STATE_ABBR = {"Alabama":"AL","Alaska":"AK","Arizona":"AZ","Arkansas":"AR","California":"CA","Colorado":"CO","Connecticut":"CT","Delaware":"DE","Florida":"FL","Georgia":"GA","Hawaii":"HI","Idaho":"ID","Illinois":"IL","Indiana":"IN","Iowa":"IA","Kansas":"KS","Kentucky":"KY","Louisiana":"LA","Maine":"ME","Maryland":"MD","Massachusetts":"MA","Michigan":"MI","Minnesota":"MN","Mississippi":"MS","Missouri":"MO","Montana":"MT","Nebraska":"NE","Nevada":"NV","New Hampshire":"NH","New Jersey":"NJ","New Mexico":"NM","New York":"NY","North Carolina":"NC","North Dakota":"ND","Ohio":"OH","Oklahoma":"OK","Oregon":"OR","Pennsylvania":"PA","Rhode Island":"RI","South Carolina":"SC","South Dakota":"SD","Tennessee":"TN","Texas":"TX","Utah":"UT","Vermont":"VT","Virginia":"VA","Washington":"WA","West Virginia":"WV","Wisconsin":"WI","Wyoming":"WY"};
 
-
-function _bestCity(a) {
-  const city = a.city || a.town || a.village || a.municipality || '';
-  const suburb = a.suburb || '';
-  const neighbourhood = a.neighbourhood || '';
-  const quarter = a.quarter || a.city_district || '';
-  if (city === 'New York' || city === 'New York City') {
-    return neighbourhood || suburb || quarter || city;
-  }
-  return a.town || a.village || suburb || city || quarter || a.county || '';
+async function _fetchAddrs(val) {
+  // Use higher limit and broader search for better NYC/borough results
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(val)}&limit=10&countrycodes=us&dedupe=1`,
+    {headers:{'Accept-Language':'en'}}
+  );
+  return res.json();
 }
 
-async function _fetchAddrs(val) {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(val)}&limit=8&countrycodes=us&dedupe=1`,
-      {headers:{'Accept-Language':'en'}}
-    );
-    const data = await res.json();
-    if (data && data.length > 0) return data;
-    // Nominatim found nothing — fall back to Google Geocoding for suggestions
-    const gRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(val)}&key=${GOOGLE_MAPS_KEY}&components=country:US`);
-    const gData = await gRes.json();
-    if (gData.status !== 'OK') return [];
-    // Convert Google results to Nominatim-like format
-    return gData.results.map(r => {
-      const comps = {};
-      r.address_components.forEach(c => {
-        if (c.types.includes('street_number')) comps.house_number = c.long_name;
-        if (c.types.includes('route')) comps.road = c.long_name;
-        if (c.types.includes('locality')) comps.city = c.long_name;
-        if (c.types.includes('sublocality_level_1')) comps.suburb = c.long_name;
-        if (c.types.includes('administrative_area_level_1')) comps.state = c.short_name;
-        if (c.types.includes('postal_code')) comps.postcode = c.long_name;
-      });
-      return {
-        lat: r.geometry.location.lat,
-        lon: r.geometry.location.lng,
-        address: comps,
-        place_id: r.place_id
-      };
-    });
-  } catch(e) { return []; }
+function _bestCity(a) {
+  const city    = a.city || a.town || a.village || a.municipality || '';
+  const suburb  = a.suburb || '';
+  const quarter = a.quarter || a.city_district || '';
+  const neighbourhood = a.neighbourhood || '';
+  const county  = a.county || '';
+
+  // NYC-specific: "New York City" boroughs and neighborhoods
+  // Queens neighborhoods (Flushing, Astoria, Jamaica, etc.) appear in suburb/neighbourhood
+  // Bronx neighborhoods appear in suburb
+  // Brooklyn neighborhoods appear in suburb
+  if (city === 'New York' || city === 'New York City') {
+    // Prefer neighbourhood > suburb > quarter (most specific first)
+    // But skip generic ones like "Manhattan" when suburb has the real name
+    const specific = neighbourhood || suburb || quarter;
+    if (specific) return specific;
+  }
+
+  // For Long Island: use suburb if city is just a county name
+  if (suburb && (city === county || city.includes('County'))) return suburb;
+
+  // General: prefer town/village over city for smaller areas
+  return a.town || a.village || suburb || city || quarter || county || '';
 }
 
 function _buildAddrHTML(data, fn) {
@@ -2883,9 +2861,9 @@ function _buildAddrHTML(data, fn) {
   return data.map(d => {
     const a = d.address || {};
     const street = [a.house_number, a.road].filter(Boolean).join(' ');
-    const city = _bestCity(a);
-    const state = STATE_ABBR[a.state] || a.state || '';
-    const zip = a.postcode || '';
+    const city   = _bestCity(a);
+    const state  = STATE_ABBR[a.state] || a.state || '';
+    const zip    = a.postcode || '';
     if (!street || !city) return '';
     const f = `${street}, ${city}, ${state} ${zip}`.trim();
     if (seen.has(f)) return '';
@@ -2897,7 +2875,7 @@ function _buildAddrHTML(data, fn) {
 let _addrTimer = null;
 function addressAutocomplete(val) {
   const box = document.getElementById('addr-suggestions');
-  if (!val || val.length < 3) { box.style.display='none'; return; }
+  if (!val || val.length < 4) { box.style.display='none'; return; }
   clearTimeout(_addrTimer);
   _addrTimer = setTimeout(async () => {
     try {
@@ -2907,28 +2885,14 @@ function addressAutocomplete(val) {
     } catch(e) { box.style.display='none'; }
   }, 350);
 }
-
-let _ncAddrTimer = null;
-function ncAddressAutocomplete(val) {
-  const box = document.getElementById('nc-addr-suggestions');
-  if (!val || val.length < 3) { box.style.display='none'; return; }
-  clearTimeout(_ncAddrTimer);
-  _ncAddrTimer = setTimeout(async () => {
-    try {
-      const data = await _fetchAddrs(val);
-      box.innerHTML = _buildAddrHTML(data, 'ncSelectAddress');
-      box.style.display = box.innerHTML ? 'block' : 'none';
-    } catch(e) { box.style.display='none'; }
-  }, 350);
-}
-
+// Store last selected coords so manual text edits don't lose the pin
 let _lastSelectedCoords = {};
 
 function selectAddress(label, lat, lng) {
   const parsedLat = parseFloat(lat), parsedLng = parseFloat(lng);
   document.getElementById('f-address').value = label;
   geocodeCache[label] = {lat:parsedLat, lng:parsedLng};
-  _lastSelectedCoords['f-address'] = {lat:parsedLat, lng:parsedLng};
+  _lastSelectedCoords['f-address'] = {lat:parsedLat, lng:parsedLng, base:label};
   document.getElementById('addr-suggestions').style.display = 'none';
   renderMap(label);
 }
@@ -2937,7 +2901,7 @@ function ncSelectAddress(label, lat, lng) {
   const parsedLat = parseFloat(lat), parsedLng = parseFloat(lng);
   document.getElementById('nc-address').value = label;
   geocodeCache[label] = {lat:parsedLat, lng:parsedLng};
-  _lastSelectedCoords['nc-address'] = {lat:parsedLat, lng:parsedLng};
+  _lastSelectedCoords['nc-address'] = {lat:parsedLat, lng:parsedLng, base:label};
   document.getElementById('nc-addr-suggestions').style.display = 'none';
 }
 
@@ -2971,7 +2935,6 @@ function mapLocationAutocomplete(val) {
 }
 
 function pinMapLocation(label, lat, lng) {
-  if (!lat || !lng) { if (geocodeCache[label]) { lat=geocodeCache[label].lat; lng=geocodeCache[label].lng; } else return; }
   document.getElementById('map-location-search').value = label;
   document.getElementById('map-location-suggestions').style.display = 'none';
   document.getElementById('map-location-clear').style.display = 'inline-flex';
@@ -2997,15 +2960,12 @@ function clearMapLocationPin() {
 let _ncAddrTimer = null;
 function ncAddressAutocomplete(val) {
   const box = document.getElementById('nc-addr-suggestions');
-  if (!val || val.length < 3) { box.style.display='none'; return; }
+  if (!val || val.length < 4) { box.style.display='none'; return; }
   clearTimeout(_ncAddrTimer);
   _ncAddrTimer = setTimeout(async () => {
     try {
-      box.innerHTML = '<div class="addr-option" style="color:var(--ink4)">Searching…</div>';
-      box.style.display = 'block';
       const data = await _fetchAddrs(val);
-      if (!data.length) { box.style.display='none'; return; }
-      box.innerHTML = await _buildAddrHTMLGoogle(data, 'ncSelectAddress');
+      box.innerHTML = _buildAddrHTML(data, 'ncSelectAddress');
       box.style.display = box.innerHTML ? 'block' : 'none';
     } catch(e) { box.style.display='none'; }
   }, 350);
@@ -3031,12 +2991,7 @@ async function deleteClient() {
 }
 
 async function init() {
-  const safety = setTimeout(() => showLoading(false), 6000);
-  try {
-    await loadExtra();
-  } catch(e) { console.error('Init error:', e); }
-  clearTimeout(safety);
-  showLoading(false);
+  await loadExtra();
   computeStats();
   renderClients();
   buildOutreach();
@@ -3095,7 +3050,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.51</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.52</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
