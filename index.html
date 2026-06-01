@@ -560,7 +560,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.47</div>
+      <div class="sidebar-version">Magic Touch v3.48</div>
     </div>
   </aside>
 
@@ -2983,7 +2983,12 @@ async function deleteClient() {
 }
 
 async function init() {
-  await loadExtra();
+  const safety = setTimeout(() => showLoading(false), 6000);
+  try {
+    await loadExtra();
+  } catch(e) { console.error('Init error:', e); }
+  clearTimeout(safety);
+  showLoading(false);
   computeStats();
   renderClients();
   buildOutreach();
@@ -3042,7 +3047,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.47</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.48</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
