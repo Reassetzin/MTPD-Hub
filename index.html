@@ -559,7 +559,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.50</div>
+      <div class="sidebar-version">Magic Touch v3.51</div>
     </div>
   </aside>
 
@@ -1008,6 +1008,7 @@ const BASE_APPTS = {}; // All data loaded from Supabase
 
 // ── SUPABASE CONFIG ────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://nuvpqmnizwgdhhfqxozl.supabase.co';
+const GOOGLE_MAPS_KEY = 'AIzaSyD1kVlk261T6Dj4VgZfK2pgtItmT5sgd4g';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51dnBxbW5pendnZGhoZnF4b3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NTUyNzQsImV4cCI6MjA5NDIzMTI3NH0.h0-FaqjAoap9rcm4Y2T9TNXurVgmDhwuYCfeFPLZXNA';
 
 const sb = {
@@ -2832,7 +2833,6 @@ Object.entries(KNOWN_COORDS).forEach(([addr, coords]) => { geocodeCache[addr] = 
 // ── ADDRESS AUTOCOMPLETE ──────────────────────────────────────────────────
 const STATE_ABBR = {"Alabama":"AL","Alaska":"AK","Arizona":"AZ","Arkansas":"AR","California":"CA","Colorado":"CO","Connecticut":"CT","Delaware":"DE","Florida":"FL","Georgia":"GA","Hawaii":"HI","Idaho":"ID","Illinois":"IL","Indiana":"IN","Iowa":"IA","Kansas":"KS","Kentucky":"KY","Louisiana":"LA","Maine":"ME","Maryland":"MD","Massachusetts":"MA","Michigan":"MI","Minnesota":"MN","Mississippi":"MS","Missouri":"MO","Montana":"MT","Nebraska":"NE","Nevada":"NV","New Hampshire":"NH","New Jersey":"NJ","New Mexico":"NM","New York":"NY","North Carolina":"NC","North Dakota":"ND","Ohio":"OH","Oklahoma":"OK","Oregon":"OR","Pennsylvania":"PA","Rhode Island":"RI","South Carolina":"SC","South Dakota":"SD","Tennessee":"TN","Texas":"TX","Utah":"UT","Vermont":"VT","Virginia":"VA","Washington":"WA","West Virginia":"WV","Wisconsin":"WI","Wyoming":"WY"};
 
-const GOOGLE_MAPS_KEY = 'AIzaSyD1kVlk261T6Dj4VgZfK2pgtItmT5sgd4g';
 
 function _bestCity(a) {
   const city = a.city || a.town || a.village || a.municipality || '';
@@ -3095,7 +3095,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.50</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.51</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
