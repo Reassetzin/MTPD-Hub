@@ -153,6 +153,7 @@ body.dark .cal-day.other-month { background:var(--bg); }
 body.dark .cal-day.today { background:#0f2e1a; }
 body.dark .week-cell { background:#1f1f22; }
 body.dark .client-card-footer { background:#18181b; }
+body.dark .btn-outreach-copy { background:#1c2e22 !important; color:#6abf82 !important; border-color:#1c2e22 !important; }
 /* Dark mode — muted colors for all colored elements */
 body.dark .pet-chip { background:#1c2e22; color:#6abf82; border-color:#1c2e22; }
 body.dark .tag-overdue   { background:#2e1c1c; color:#e07070; border-color:#2e1c1c; }
@@ -564,7 +565,7 @@ body.dark .btn-row:hover { background:#2a2a2e; color:#ccc; }
           <div class="toggle-thumb" id="toggle-thumb"></div>
         </div>
       </div>
-      <div class="sidebar-version">Magic Touch v3.67</div>
+      <div class="sidebar-version">Magic Touch v3.68</div>
     </div>
   </aside>
 
@@ -2131,7 +2132,7 @@ function buildOutreach() {
         ${ex.address ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">📍 ${ex.address}</div>` : ''}
       </div>
       <button class="btn-row" onclick="openProfile('${name.replace(/'/g,"\\'")}')"> →</button>
-      <button class="btn btn-sm btn-primary" onclick="copyClientReminder('${name.replace(/'/g,"\\'")}')">📋 Copy Message</button>
+      <button class="btn btn-sm btn-primary btn-outreach-copy" onclick="copyClientReminder('${name.replace(/'/g,"\\'")}')">📋 Copy Message</button>
     </div>`;
   }).join('');
 
@@ -3492,7 +3493,7 @@ init();
 </div>
 
 <!-- VERSION BADGE -->
-<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.67</div>
+<div style="position:fixed;bottom:12px;left:12px;background:rgba(30,45,61,0.6);color:rgba(255,255,255,0.4);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;z-index:50;letter-spacing:0.5px;pointer-events:none;">v3.68</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
